@@ -76,7 +76,6 @@ parso==0.2.0
 pexpect==4.5.0
 pickleshare==0.7.4
 Pillow==5.0.0
-pkg-resources==0.0.0
 pluggy==0.6.0
 prompt-toolkit==1.0.15
 psycopg2==2.7.4
