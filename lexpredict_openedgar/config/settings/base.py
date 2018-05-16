@@ -331,7 +331,7 @@ S3_SECRET_KEY = env('S3_SECRET_KEY', default="")
 S3_BUCKET = env('S3_BUCKET', default="")
 S3_DOCUMENT_PATH = env('S3_DOCUMENT_PATH', default="openedgar")
 S3_PREFIX = env('S3_PREFIX', default="documents")
-S3_COMPRESSION_LEVEL = env('S3_COMPRESSION_LEVEL', default=6)
+S3_COMPRESSION_LEVEL = int(env('S3_COMPRESSION_LEVEL', default=6))
 
 # Tika configuration
 TIKA_HOST = "localhost"
