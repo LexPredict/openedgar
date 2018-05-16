@@ -8,7 +8,6 @@ cache:
   - "$HOME/.cache/pip"
   - "$HOME/libs"
 before_install:
-- chmod +x *.sh
 - sudo apt-get update -qq
 - sudo apt-get install -qq build-essential gettext python-dev zlib1g-dev libpq-dev xvfb
 - sudo apt-get install -qq libtiff4-dev libjpeg8-dev libfreetype6-dev liblcms1-dev libwebp-dev
