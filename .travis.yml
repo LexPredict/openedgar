@@ -21,6 +21,6 @@ install:
 after_script:
 - cat /tmp/tika-server-*.log
 script:
-- py.test --cov openedgar --pylint --pylint-rcfile=.pylintrc openedgar
+- python -m pytest --cov openedgar --pylint lexpredict_openedgar/openedgar/
 after_success:
 - coveralls
