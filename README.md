@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/LexPredict/lexpredict-openedgar.svg?branch=master)](https://travis-ci.com/LexPredict/lexpredict-openedgar) [![Coverage Status](https://coveralls.io/repos/github/LexPredict/lexpredict-openedgar/badge.svg?branch=master)](https://coveralls.io/github/LexPredict/lexpredict-openedgar?branch=master)[![](https://tokei.rs/b1/github/lexpredict/lexpredict-openedgar?category=code)](https://github.com/lexpredict/lexpredict-openedgar)
+[![Build Status](https://travis-ci.org/LexPredict/openedgar.svg?branch=0.9.8)](https://travis-ci.com/LexPredict/openedgar) [![Coverage Status](https://coveralls.io/repos/github/LexPredict/openedgar/badge.svg?branch=0.9.8)](https://coveralls.io/github/LexPredict/openedgar?branch=0.9.8)[![](https://tokei.rs/b1/github/lexpredict/openedgar?category=code)](https://github.com/lexpredict/openedgar)
 
 # [OpenEDGAR](openedgar.io) by [LexPredict](https://lexpredict.com)
 
