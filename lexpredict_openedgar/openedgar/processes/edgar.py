@@ -127,7 +127,7 @@ def process_all_filing_index(year: int = None, form_type_list: Iterable[str] = N
             logger.info("Skipping process_filing_index for {0}...".format(s3_path))
 
 
-def search_filing_documents(term_list: Sized[str], form_type_list: Iterable[str] = None, sequence: int = None,
+def search_filing_documents(term_list: Iterable[str], form_type_list: Iterable[str] = None, sequence: int = None,
                             case_sensitive: bool = False,
                             token_search: bool = False, stem_search: bool = False):
     """
