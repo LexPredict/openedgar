@@ -206,4 +206,3 @@ class SearchQueryResult(django.db.models.Model):
         :return:
         """
         return "SearchQueryTerm search_query={0}, term={1}".format(self.search_query, self.term)
-
