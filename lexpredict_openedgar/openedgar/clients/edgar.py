@@ -73,8 +73,8 @@ def get_buffer(remote_path: str, base_path: str = HTTP_SEC_HOST):
                 if 'Last-Modified' in r.headers:
                     try:
                         last_modified_date = dateutil.parser.parse(r.headers['Last-Modified']).date()
-                    except Exception as e:
-                        logger.error("Unable to update last modified date: {0}".format(remote_path, failures, e))
+                    except Exception as e:  # pylint: disable=broad-except
+                        logger.error("Unable to update last modified date for {0}: {1}".format(remote_path, e))
 
                 file_buffer = r.content
                 complete = True
@@ -82,7 +82,7 @@ def get_buffer(remote_path: str, base_path: str = HTTP_SEC_HOST):
                 # Sleep if set gt0
                 if HTTP_SLEEP_DEFAULT > 0:
                     time.sleep(HTTP_SLEEP_DEFAULT)
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-excepts
             # Handle and sleep
             if failures < len(HTTP_FAIL_SLEEP):
                 logger.warning("File {0}, failure {1}: {2}".format(remote_path, failures, e))
@@ -114,7 +114,7 @@ def list_path(remote_path: str):
     """
     # Log entrance
     logger.info("Retrieving directory listing from {0}".format(remote_path))
-    remote_buffer, last_modified_date = get_buffer(remote_path)
+    remote_buffer, _ = get_buffer(remote_path)
 
     # Parse the index listing
     if remote_buffer is None:
@@ -256,7 +256,7 @@ def get_company(cik: Union[int, str]):
                                          encoding="utf-8").decode("utf-8")
         mailing_address = " ".join(raw_address.splitlines()[1:]).strip()
         company_data["mailing_address"] = mailing_address
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-except
         logger.warning("Unable to parse mailing_address: {0}".format(e))
         company_data["mailing_address"] = None
 
@@ -265,34 +265,34 @@ def get_company(cik: Union[int, str]):
                                          encoding="utf-8").decode("utf-8")
         business_address = " ".join(raw_address.splitlines()[1:]).strip()
         company_data["business_address"] = business_address
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-except
         logger.warning("Unable to parse business_address: {0}".format(e))
         company_data["business_address"] = None
 
     try:
         company_data["name"] = list(list(company_info_div)[2])[0].text.strip()
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-except
         logger.warning("Unable to parse name: {0}".format(e))
         company_data["name"] = None
 
     try:
         ident_info_p = list(list(company_info_div)[2])[1]
         company_data["sic"] = list(ident_info_p)[1].text
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-except
         logger.warning("Unable to parse SIC: {0}".format(e))
         company_data["sic"] = None
 
     try:
         ident_info_p = list(list(company_info_div)[2])[1]
         company_data["state_location"] = list(ident_info_p)[3].text
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-except
         logger.warning("Unable to parse SIC: {0}".format(e))
         company_data["state_location"] = None
 
     try:
         ident_info_p = list(list(company_info_div)[2])[1]
         company_data["state_incorporation"] = list(ident_info_p)[4].text
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-except
         logger.warning("Unable to parse SIC: {0}".format(e))
         company_data["state_incorporation"] = None
 

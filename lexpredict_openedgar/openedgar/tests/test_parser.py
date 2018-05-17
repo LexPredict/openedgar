@@ -59,7 +59,7 @@ def test_filing_parser_header():
     :return:
     """
     uri = "/Archives/edgar/data/1599891/0001193125-18-000566.txt"
-    buffer, last_modified_date = openedgar.clients.edgar.get_buffer(uri)
+    buffer, _ = openedgar.clients.edgar.get_buffer(uri)
 
     # parser buffer
     expected_name = "Sunshine Bancorp, Inc."
@@ -78,7 +78,7 @@ def test_filing_parser_header_old():
     :return:
     """
     uri = "/Archives/edgar/data/7323/0000007323-94-000018.txt"
-    buffer, last_modified_date = openedgar.clients.edgar.get_buffer(uri)
+    buffer, _ = openedgar.clients.edgar.get_buffer(uri)
 
     # parser buffer
     expected_name = "ARKANSAS POWER & LIGHT CO"
@@ -99,7 +99,7 @@ def test_filing_parser_pdf():
     :return:
     """
     uri = "/Archives/edgar/data/721994/0000721994-18-000014.txt"
-    buffer, last_modified_date = openedgar.clients.edgar.get_buffer(uri)
+    buffer, _ = openedgar.clients.edgar.get_buffer(uri)
 
     # parser buffer
     segment_count = 0
@@ -127,7 +127,7 @@ def test_index_parser():
     """
     # download index
     uri = "/Archives/edgar/daily-index/1994/QTR3/form.093094.idx"
-    buffer, last_modified_date = openedgar.clients.edgar.get_buffer(uri)
+    buffer, _ = openedgar.clients.edgar.get_buffer(uri)
 
     # save to temp file
     with tempfile.NamedTemporaryFile(delete=False) as temp_file:

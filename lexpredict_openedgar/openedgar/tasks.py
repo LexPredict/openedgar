@@ -237,11 +237,11 @@ def process_filing_index(s3_path: str, filing_index_buffer: Union[str, bytes] = 
         try:
             filing = Filing.objects.get(s3_path=filing_path)
             logger.info("Filing record already exists: {0}".format(filing))
-        except Filing.MultipleObjectsReturned as _:
+        except Filing.MultipleObjectsReturned as e:
             # Create new filing record
             logger.error("Multiple Filing records found for s3_path={0}, skipping...".format(filing_path))
             continue
-        except Filing.DoesNotExist as _:
+        except Filing.DoesNotExist as f:
             # Create new filing record
             logger.info("No Filing record found for {0}, creating...".format(filing_path))
 
@@ -250,8 +250,8 @@ def process_filing_index(s3_path: str, filing_index_buffer: Union[str, bytes] = 
                 # Download
                 try:
                     filing_buffer, _ = openedgar.clients.edgar.get_buffer("/Archives/{0}".format(filing_path))
-                except RuntimeError as e:
-                    logger.error("Unable to access resource {0} from EDGAR: {1}".format(filing_path, e))
+                except RuntimeError as g:
+                    logger.error("Unable to access resource {0} from EDGAR: {1}".format(filing_path, g))
                     bad_record_count += 1
                     create_filing_error(row, filing_path)
                     continue
@@ -399,7 +399,7 @@ def process_filing(s3_path: str, filing_buffer: Union[str, bytes] = None, store_
         filing.is_processed = False
         filing.is_error = True
         filing.save()
-    except Exception as e:  # pylint: disable=bare-except
+    except Exception as e:  # pylint: disable=broad-except
         logger.error("Unable to create filing record: {0}".format(e))
         return None
 
@@ -410,7 +410,7 @@ def process_filing(s3_path: str, filing_buffer: Union[str, bytes] = None, store_
         filing.is_error = False
         filing.save()
         return filing
-    except Exception as e:  # pylint: disable=bare-except
+    except Exception as e:  # pylint: disable=broad-except
         logger.error("Unable to create filing documents for {0}: {1}".format(filing, e))
         return None
 
@@ -522,3 +522,4 @@ def extract_filing_document_data_sha1(sha1: str):
     document_buffer = openedgar.clients.s3.get_buffer(text_s3_path).decode("utf-8")
 
     # TODO: Build your own database here.
+    _ = len(document_buffer)

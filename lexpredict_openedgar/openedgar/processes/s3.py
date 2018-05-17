@@ -144,7 +144,7 @@ def clean_rate_limited_files(cik: int = None, fix: bool = True, client=None):
 
                 # Fix if requested
                 if fix:
-                    logger.info("Fixing file...".format(remote_path))
+                    logger.info("Fixing file: {0}".format(remote_path))
 
                     # Ensure path is correct
                     if not remote_path.strip("/").startswith("Archives/"):
@@ -153,7 +153,7 @@ def clean_rate_limited_files(cik: int = None, fix: bool = True, client=None):
                         edgar_url = remote_path
 
                     # Get buffer from EDGAR
-                    buffer, last_modified_date = openedgar.clients.edgar.get_buffer(edgar_url)
+                    buffer, _ = openedgar.clients.edgar.get_buffer(edgar_url)
 
                     # Replace bad remote path on S3
                     openedgar.clients.s3.put_buffer(remote_path, buffer, client)
@@ -203,7 +203,7 @@ def clean_empty_files(cik: int = None, fix: bool = True, client=None):
 
                 # Fix if requested
                 if fix:
-                    logger.info("Fixing file...".format(remote_path))
+                    logger.info("Fixing file: {0}".format(remote_path))
 
                     # Ensure path is correct
                     if not remote_path.strip("/").startswith("Archives/"):
@@ -212,7 +212,7 @@ def clean_empty_files(cik: int = None, fix: bool = True, client=None):
                         edgar_url = remote_path
 
                     # Get buffer from EDGAR
-                    buffer, last_modified_date = openedgar.clients.edgar.get_buffer(edgar_url)
+                    buffer, _ = openedgar.clients.edgar.get_buffer(edgar_url)
 
                     # Replace bad remote path on S3
                     if len(buffer) > 0:
@@ -266,7 +266,7 @@ def clean_access_denied_files(cik: int = None, fix: bool = True, client=None):
 
                 # Fix if requested
                 if fix:
-                    logger.info("Removing file...".format(remote_path))
+                    logger.info("Removing file: {0}".format(remote_path))
 
                     # Replace bad remote path on S3
                     success = openedgar.clients.s3.delete_path(remote_path, client)
