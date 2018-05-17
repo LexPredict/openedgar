@@ -4,9 +4,12 @@
 
 OpenEDGAR is a comprehensive framework for building databases from EDGAR, and can automate the retrieval and parsing of EDGAR forms.  OpenEDGAR uses the same software that powers many of our data products, including the [LexPredict Agreement Database](https://agreementdatabase.com).  
 
-As with our pioneering [ContraxSuite](https://contraxsuite.com) contract analytics platform, OpenEDGAR is open source and be used freely under the permissive MIT license.
+As with our pioneering [ContraxSuite](https://contraxsuite.com) contract analytics platform, OpenEDGAR is open source.  OpenEDGAR can be used freely under the [MIT License](LICENSE).
 
 ![Logo](https://s3.amazonaws.com/lexpredict.com-marketing/graphics/lexpredict_lexnlp_logo_horizontal_1.png)
+
+# How to use OpenEDGAR
+* Installation Guide: [INSTALL.md](INSTALL.md)
 
 # Related Information
 * Official Website: https://openedgar.io/
