@@ -1,4 +1,5 @@
-[![Build Status](https://travis-ci.com/LexPredict/openedgar.svg?branch=0.9.8)](https://travis-ci.com/LexPredict/openedgar) [![Coverage Status](https://coveralls.io/repos/github/LexPredict/openedgar/badge.svg?branch=0.9.8)](https://coveralls.io/github/LexPredict/openedgar?branch=0.9.8)[![](https://tokei.rs/b1/github/lexpredict/openedgar?category=code)](https://github.com/lexpredict/openedgar)
+[![Build Status](https://travis-ci.com/LexPredict/openedgar.svg?branch=0.9.8)](https://travis-ci.com/LexPredict/openedgar) [![Coverage Status](https://coveralls.io/repos/github/LexPredict/openedgar/badge.svg?branch=0.9.9)](https://coveralls.io/github/LexPredict/openedgar?branch=0.9.9) [![](https://tokei.rs/b1/github/lexpredict/openedgar?category=code)](https://github.com/lexpredict/openedgar)
+
 
 ![Logo](https://github.com/LexPredict/openedgar/blob/0.9.9/lexpredict_openedgar_logo_horizontal_1_tight.png?raw=true)
 # [OpenEDGAR](openedgar.io) by [LexPredict](https://lexpredict.com)
