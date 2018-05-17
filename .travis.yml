@@ -15,11 +15,14 @@ before_install:
 - sudo apt-get install -qq firefox automake libtool libreadline6 libreadline6-dev libreadline-dev
 - sudo apt-get install -qq libsqlite3-dev libxml2 libxml2-dev libssl-dev libbz2-dev wget curl llvm
 - sudo apt-get install -qq tesseract-ocr
+- cp
 install:
 - pip install -r lexpredict_openedgar/requirements/full.txt
+- cp lexpredict_openedgar/sample.env lexpredict_openedgar/.env
 after_script:
 - cat /tmp/tika-server-*.log
 script:
+- source lexpredict_openedgar/.env
 - python -m pytest --cov openedgar --pylint lexpredict_openedgar/openedgar/
 after_success:
 - coveralls
