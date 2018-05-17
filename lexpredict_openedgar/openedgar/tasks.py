@@ -399,7 +399,7 @@ def process_filing(s3_path: str, filing_buffer: Union[str, bytes] = None, store_
         filing.is_processed = False
         filing.is_error = True
         filing.save()
-    except Exception as e:
+    except Exception as e:  # pylint: disable=bare-except
         logger.error("Unable to create filing record: {0}".format(e))
         return None
 
@@ -410,7 +410,7 @@ def process_filing(s3_path: str, filing_buffer: Union[str, bytes] = None, store_
         filing.is_error = False
         filing.save()
         return filing
-    except Exception as e:
+    except Exception as e:  # pylint: disable=bare-except
         logger.error("Unable to create filing documents for {0}: {1}".format(filing, e))
         return None
 
