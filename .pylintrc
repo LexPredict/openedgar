@@ -1,0 +1,11 @@
+[FORMAT]
+max-line-length=120
+
+[MESSAGES CONTROL]
+disable=r,c,w0511,w1202,e1101
+
+[DESIGN]
+max-parents=13
+
+[MISCELLANEOUS]
+notes=FIXME,TODO
