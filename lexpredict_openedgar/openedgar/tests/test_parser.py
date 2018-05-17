@@ -35,7 +35,7 @@ def test_filing_parser():
     :return:
     """
     uri = "/Archives/edgar/data/1297937/000107878205000139/0001078782-05-000139.txt"
-    buffer, last_modified_date = openedgar.clients.edgar.get_buffer(uri)
+    buffer, _ = openedgar.clients.edgar.get_buffer(uri)
 
     # parser buffer
     segment_count = 0

@@ -82,7 +82,7 @@ def get_buffer(remote_path: str, base_path: str = HTTP_SEC_HOST):
                 # Sleep if set gt0
                 if HTTP_SLEEP_DEFAULT > 0:
                     time.sleep(HTTP_SLEEP_DEFAULT)
-        except Exception as e:  # pylint: disable=broad-excepts
+        except Exception as e:  # pylint: disable=broad-except
             # Handle and sleep
             if failures < len(HTTP_FAIL_SLEEP):
                 logger.warning("File {0}, failure {1}: {2}".format(remote_path, failures, e))

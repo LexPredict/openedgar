@@ -29,19 +29,20 @@ import logging
 import tempfile
 import os
 import pathlib
-
-# Packages
 from typing import Iterable, Union
 
-import django.db.utils
+# Packages
 import dateutil.parser
+import django.db.utils
+from celery import shared_task
+
+# Project
 from config.settings.base import S3_DOCUMENT_PATH
 import openedgar.clients.s3
 import openedgar.clients.edgar
 import openedgar.parsers.edgar
 from openedgar.models import Filing, CompanyInfo, Company, FilingDocument, SearchQuery, SearchQueryTerm, \
     SearchQueryResult, FilingIndex
-from celery import shared_task
 
 # LexNLP imports
 import lexnlp.nlp.en.tokens
@@ -240,10 +241,12 @@ def process_filing_index(s3_path: str, filing_index_buffer: Union[str, bytes] = 
         except Filing.MultipleObjectsReturned as e:
             # Create new filing record
             logger.error("Multiple Filing records found for s3_path={0}, skipping...".format(filing_path))
+            logger.info("Raw exception: {0}".format(e))
             continue
         except Filing.DoesNotExist as f:
             # Create new filing record
             logger.info("No Filing record found for {0}, creating...".format(filing_path))
+            logger.info("Raw exception: {0}".format(f))
 
             # Check if exists; download and upload to S3 if missing
             if not openedgar.clients.s3.path_exists(filing_path, client=s3_client):

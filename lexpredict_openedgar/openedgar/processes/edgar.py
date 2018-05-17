@@ -23,14 +23,13 @@ SOFTWARE.
 """
 
 # Libraries
+from typing import Iterable
 import logging
 
 # Project
-from typing import Iterable, Sized
-
-import openedgar.parsers.edgar
 import openedgar.clients.edgar
 import openedgar.clients.s3
+import openedgar.parsers.edgar
 from openedgar.models import FilingDocument, SearchQueryTerm, SearchQuery, FilingIndex
 from openedgar.tasks import process_filing_index, search_filing_document_sha1
 
