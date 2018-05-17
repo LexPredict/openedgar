@@ -1,0 +1,24 @@
+# Pro-tip: Try not to put anything here. Avoid dependencies in
+#	production that aren't in development.
+-r base.txt
+
+
+
+# WSGI Handler
+# ------------------------------------------------
+gevent==1.2.2
+gunicorn==19.7.1
+
+# Static and Media Storage
+# ------------------------------------------------
+boto3==1.5.33
+django-storages==1.6.5
+
+
+# Email backends for Mailgun, Postmark, SendGrid and more
+# -------------------------------------------------------
+django-anymail==1.4
+
+
+
+
