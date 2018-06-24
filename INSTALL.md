@@ -156,7 +156,7 @@ an AWS account is required for S3 usage and performance will be substantially re
 
 16. Setup Apache Tika and run
 
-    a. `$ cd /opt/openedgar`
+    a. `$ cd /opt/openedgar/tika`
     
     b. `$ bash download_tika.sh`
     
