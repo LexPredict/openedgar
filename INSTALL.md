@@ -150,9 +150,7 @@ an AWS account is required for S3 usage and performance will be substantially re
     
     c. `$ source .env`
     
-    d. `$ python manage.py makemigrations`
-    
-    e. `$ python manage.py migrate`
+    d. `$ python manage.py migrate`
 
 16. Setup Apache Tika and run
 
