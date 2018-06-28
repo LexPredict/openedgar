@@ -43,7 +43,7 @@ an AWS account is required for S3 usage and performance will be substantially re
 
 
 ### OpenEDGAR Setup
-10. Clone repo
+10. Clone repo (you may need to ensure you have permissions to create a directory under /opt)
 
     a. `$ cd /opt`
     
@@ -53,13 +53,13 @@ an AWS account is required for S3 usage and performance will be substantially re
 
     a. `$ cd /opt/openedgar`
     
-    b. `$ virtualenv -p /usr/bin/python3`
+    b. `$ virtualenv -p /usr/bin/python3 env`
     
     c. `$ ./env/bin/pip install -r lexpredict_openedgar/requirements/full.txt`
     
 12. Setup database
 
-    a. `$ sudo -u postgres createdb createuser -l -P -s openedgar`
+    a. `$ sudo -u postgres createuser -l -P -s openedgar`
     
     b. `$ sudo -u postgres createdb -O openedgar openedgar`
     
