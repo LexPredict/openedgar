@@ -25,10 +25,11 @@ SOFTWARE.
 # Libraries
 from typing import Iterable
 import logging
-
+import os
 # Project
 import openedgar.clients.edgar
 import openedgar.clients.s3
+import openedgar.clients.local
 import openedgar.parsers.edgar
 from openedgar.models import FilingDocument, SearchQueryTerm, SearchQuery, FilingIndex
 from openedgar.tasks import process_filing_index, search_filing_document_sha1
@@ -43,10 +44,11 @@ console.setFormatter(formatter)
 logger.addHandler(console)
 
 
-def download_filing_index_data(year: int = None):
+def download_filing_index_data(client_type: str = "S3", year: int = None):
     """
     Download all filing index data.
     :param year:
+    :param client_type:
     :return:
     """
     # Get filing index list
@@ -55,45 +57,81 @@ def download_filing_index_data(year: int = None):
     else:
         filing_index_list = openedgar.clients.edgar.list_index()
 
-    # Create S3 client
-    s3_client = openedgar.clients.s3.get_client()
+    path_list = []
+    configured_client = os.environ["CLIENT_TYPE"]
+    logger.info(msg="Configured client is: {}".format(configured_client))
 
-    # Track S3 path lists for return
-    s3_path_list = []
+    if configured_client is None or configured_client == "S3":
+        # Create S3 client
+        s3_client = openedgar.clients.s3.get_client()
 
-    # Now iterate through list to check if already on S3
-    for filing_index_path in filing_index_list:
-        # Cleanup path
-        if filing_index_path.startswith("/Archives/"):
-            s3_path = filing_index_path[len("/Archives/"):]
-        else:
-            s3_path = filing_index_path
+        # Now iterate through list to check if already on S3
+        for filing_index_path in filing_index_list:
+            # Cleanup path
+            if filing_index_path.startswith("/Archives/"):
+                s3_path = filing_index_path[len("/Archives/"):]
+            else:
+                s3_path = filing_index_path
 
-        # Check if exists in database
-        try:
-            filing_index = FilingIndex.objects.get(edgar_url=filing_index_path)
-            is_processed = filing_index.is_processed
-            logger.info("Index {0} already exists in DB.".format(filing_index_path))
-        except FilingIndex.DoesNotExist:
-            is_processed = False
-            logger.info("Index {0} does not exist in DB.".format(filing_index_path))
+            # Check if exists in database
+            try:
+                filing_index = FilingIndex.objects.get(edgar_url=filing_index_path)
+                is_processed = filing_index.is_processed
+                logger.info("Index {0} already exists in DB.".format(filing_index_path))
+            except FilingIndex.DoesNotExist:
+                is_processed = False
+                logger.info("Index {0} does not exist in DB.".format(filing_index_path))
 
-        # Check if exists; download and upload to S3 if missing
-        if not openedgar.clients.s3.path_exists(s3_path, client=s3_client):
-            # Download
-            buffer, _ = openedgar.clients.edgar.get_buffer(filing_index_path)
+            # Check if exists; download and upload to S3 if missing
+            if not openedgar.clients.s3.path_exists(s3_path, client=s3_client):
+                # Download
+                buffer, _ = openedgar.clients.edgar.get_buffer(filing_index_path)
 
-            # Upload
-            openedgar.clients.s3.put_buffer(s3_path, buffer, client=s3_client)
+                # Upload
+                openedgar.clients.s3.put_buffer(s3_path, buffer, client=s3_client)
 
-            logger.info("Retrieved {0} and uploaded to S3.".format(filing_index_path))
-            s3_path_list.append((s3_path, True, is_processed))
-        else:
-            logger.info("Index {0} already exists on S3.".format(filing_index_path))
-            s3_path_list.append((s3_path, False, is_processed))
+                logger.info("Retrieved {0} and uploaded to S3.".format(filing_index_path))
+                path_list.append((s3_path, True, is_processed))
+            else:
+                logger.info("Index {0} already exists on S3.".format(filing_index_path))
+                path_list.append((s3_path, False, is_processed))
+
+    elif configured_client == "LOCAL":
+
+        download_path = os.environ["DOWNLOAD_PATH"]
+
+        for filing_index_path in filing_index_list:
+            # Cleanup path
+            if filing_index_path.startswith("/Archives/"):
+                file_path = os.path.join(download_path,filing_index_path[len("/Archives/"):])
+            else:
+                file_path = os.path.join(download_path,filing_index_path)
+
+            # Check if exists in database
+            try:
+                filing_index = FilingIndex.objects.get(edgar_url=filing_index_path)
+                is_processed = filing_index.is_processed
+                logger.info("Index {0} already exists in DB.".format(filing_index_path))
+            except FilingIndex.DoesNotExist:
+                is_processed = False
+                logger.info("Index {0} does not exist in DB.".format(filing_index_path))
+
+            # Check if exists; download and upload to S3 if missing
+            if not openedgar.clients.local.path_exists(file_path):
+                # Download
+                buffer, _ = openedgar.clients.edgar.get_buffer(filing_index_path)
+
+                # Upload
+                openedgar.clients.local.put_buffer(file_path, buffer)
+
+                logger.info("Retrieved {0} and stored locally.".format(filing_index_path))
+                path_list.append((file_path, True, is_processed))
+            else:
+                logger.info("Index {0} already exists locally.".format(filing_index_path))
+                path_list.append((file_path, False, is_processed))
 
     # Return list of updates
-    return s3_path_list
+    return path_list
 
 
 def process_all_filing_index(year: int = None, form_type_list: Iterable[str] = None, new_only: bool = False,
