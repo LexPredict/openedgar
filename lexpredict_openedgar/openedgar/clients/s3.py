@@ -51,7 +51,6 @@ class S3Client:
     def __init__(self):
         logger.info("Initialized S3 client")
 
-
     def get_resource(self):
         """
         Get S3 resource.
@@ -60,7 +59,6 @@ class S3Client:
         # Create S3 resource
         s3 = boto3.resource('s3', aws_access_key_id=S3_ACCESS_KEY, aws_secret_access_key=S3_SECRET_KEY)
         return s3
-
 
     def get_client(self):
         """
@@ -71,7 +69,6 @@ class S3Client:
         client = boto3.client('s3', aws_access_key_id=S3_ACCESS_KEY, aws_secret_access_key=S3_SECRET_KEY)
         return client
 
-
     def get_bucket(self):
         """
         Get S3 bucket
@@ -81,7 +78,6 @@ class S3Client:
         s3 = boto3.resource('s3', aws_access_key_id=S3_ACCESS_KEY, aws_secret_access_key=S3_SECRET_KEY)
         bucket = s3.Bucket(S3_BUCKET)
         return bucket
-
 
     def path_exists(self, path: str, client=None):
         """
@@ -103,7 +99,6 @@ class S3Client:
             else:
                 logger.error("Unable to check if path {0} exists: {1}".format(path, e))
 
-
     def delete_path(self, path: str, client=None):
         """
         Remove a key (non-recursively) from an S3 path.
@@ -123,7 +118,6 @@ class S3Client:
                 return False
             else:
                 logger.error("Unable to delete path {0}: {1}".format(path, e))
-
 
     def list_path(self, path: str, client=None):
         """
@@ -146,7 +140,6 @@ class S3Client:
                 path_objects.append(o["Key"])
 
         return path_objects
-
 
     def list_path_folders(self, path: str, client=None, limit: int = None):
         """
@@ -176,7 +169,6 @@ class S3Client:
 
         return folders
 
-
     def get_buffer(self, remote_path: str, client=None, deflate: bool = True):
         """
         Get a file from S3 given a path and optional client.
@@ -201,7 +193,6 @@ class S3Client:
         else:
             return buffer
 
-
     def get_file(self, remote_path: str, local_path: str, client=None, deflate: bool = True):
         """
         Save a local file from S3 given a path and optional client.
@@ -214,7 +205,6 @@ class S3Client:
         # Open and write buffer
         with open(local_path, "wb") as out_file:
             out_file.write(self.get_buffer(remote_path, client, deflate))
-
 
     def get_buffer_segment(self, remote_path: str, start_pos: int, end_pos: int, client=None, deflate: bool = True):
         """
@@ -229,7 +219,6 @@ class S3Client:
         # Retrieve buffer and return subset
         buffer = self.get_buffer(remote_path, client, deflate)
         return buffer[start_pos:end_pos]
-
 
     def put_buffer(self, remote_path: str, buffer: Union[str, bytes], client=None, deflate: bool = True):
         """
@@ -258,7 +247,6 @@ class S3Client:
         # Upload
         response = client.put_object(Bucket=S3_BUCKET, Key=remote_path, Body=upload_buffer)
         return True if response["ResponseMetadata"]["HTTPStatusCode"] == 200 else False
-
 
     def put_file(self, remote_path: str, local_path: str, client=None, deflate: bool = True):
         """

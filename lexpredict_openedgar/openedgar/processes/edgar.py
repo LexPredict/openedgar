@@ -45,11 +45,10 @@ console.setFormatter(formatter)
 logger.addHandler(console)
 
 
-def download_filing_index_data(client_type: str = "S3", year: int = None):
+def download_filing_index_data(year: int = None):
     """
     Download all filing index data.
     :param year:
-    :param client_type:
     :return:
     """
     # Get filing index list
@@ -66,7 +65,7 @@ def download_filing_index_data(client_type: str = "S3", year: int = None):
     if configured_client is None or configured_client == "S3":
         # Create S3 client
         download_client = S3Client()
-    else :
+    else:
         download_client = LocalClient()
         path_prefix = os.environ["DOWNLOAD_PATH"]
 

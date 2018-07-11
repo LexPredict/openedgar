@@ -190,7 +190,8 @@ def create_filing_error(row, filing_path: str):
 
 @shared_task
 def process_filing_index(file_path: str, filing_index_buffer: Union[str, bytes] = None,
-                         form_type_list: Iterable[str] = None, store_raw: bool = False, store_text: bool = False, use_local: bool = False):
+                         form_type_list: Iterable[str] = None, store_raw: bool = False, store_text: bool = False,
+                         use_local: bool = False):
     """
     Process a filing index from an S3 path or buffer.
     :param file_path: S3 or local path to process; if filing_index_buffer is none, retrieved from here
@@ -224,8 +225,6 @@ def process_filing_index(file_path: str, filing_index_buffer: Union[str, bytes] 
     # Get main filing data structure
     filing_index_data = openedgar.parsers.edgar.parse_index_file(temp_file.name)
     logger.info("Parsed {0} records from index".format(filing_index_data.shape[0]))
-
-
 
     # Iterate through rows
     bad_record_count = 0
