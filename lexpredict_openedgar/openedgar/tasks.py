@@ -38,7 +38,8 @@ from celery import shared_task
 
 # Project
 from config.settings.base import S3_DOCUMENT_PATH
-import openedgar.clients.s3
+from openedgar.clients.s3 import S3Client
+from openedgar.clients.local import LocalClient
 import openedgar.clients.edgar
 import openedgar.parsers.edgar
 from openedgar.models import Filing, CompanyInfo, Company, FilingDocument, SearchQuery, SearchQueryTerm, \
@@ -188,11 +189,11 @@ def create_filing_error(row, filing_path: str):
 
 
 @shared_task
-def process_filing_index(s3_path: str, filing_index_buffer: Union[str, bytes] = None,
-                         form_type_list: Iterable[str] = None, store_raw: bool = False, store_text: bool = False):
+def process_filing_index(file_path: str, filing_index_buffer: Union[str, bytes] = None,
+                         form_type_list: Iterable[str] = None, store_raw: bool = False, store_text: bool = False, use_local: bool = False):
     """
     Process a filing index from an S3 path or buffer.
-    :param s3_path: S3 path to process; if filing_index_buffer is none, retrieved from here
+    :param file_path: S3 or local path to process; if filing_index_buffer is none, retrieved from here
     :param filing_index_buffer: buffer; if not present, s3_path must be set
     :param form_type_list: optional list of form type to process
     :param store_raw:
@@ -200,12 +201,20 @@ def process_filing_index(s3_path: str, filing_index_buffer: Union[str, bytes] = 
     :return:
     """
     # Log entry
-    logger.info("Processing filing index {0}...".format(s3_path))
+    logger.info("Processing filing index {0}...".format(file_path))
+
+    # Create S3 client
+    configured_client = os.environ["CLIENT_TYPE"]
+
+    if configured_client is None or configured_client == "S3":
+        client = S3Client()
+    else:
+        client = LocalClient()
 
     # Retrieve buffer if not passed
     if filing_index_buffer is None:
-        logger.info("Retrieving filing index buffer from S3...")
-        filing_index_buffer = openedgar.clients.s3.get_buffer(s3_path)
+        logger.info("Retrieving filing index buffer for: {}...".format(file_path))
+        filing_index_buffer = client.get_buffer(file_path)
 
     # Write to disk to handle headaches
     temp_file = tempfile.NamedTemporaryFile(delete=False)
@@ -216,8 +225,7 @@ def process_filing_index(s3_path: str, filing_index_buffer: Union[str, bytes] = 
     filing_index_data = openedgar.parsers.edgar.parse_index_file(temp_file.name)
     logger.info("Parsed {0} records from index".format(filing_index_data.shape[0]))
 
-    # Create S3 client
-    s3_client = openedgar.clients.s3.get_client()
+
 
     # Iterate through rows
     bad_record_count = 0
@@ -249,7 +257,7 @@ def process_filing_index(s3_path: str, filing_index_buffer: Union[str, bytes] = 
             logger.info("Raw exception: {0}".format(f))
 
             # Check if exists; download and upload to S3 if missing
-            if not openedgar.clients.s3.path_exists(filing_path, client=s3_client):
+            if not openedgar.clients.s3.path_exists(filing_path, client=client):
                 # Download
                 try:
                     filing_buffer, _ = openedgar.clients.edgar.get_buffer("/Archives/{0}".format(filing_path))
@@ -260,13 +268,13 @@ def process_filing_index(s3_path: str, filing_index_buffer: Union[str, bytes] = 
                     continue
 
                 # Upload
-                openedgar.clients.s3.put_buffer(filing_path, filing_buffer, client=s3_client)
+                openedgar.clients.s3.put_buffer(filing_path, filing_buffer, client=client)
 
                 logger.info("Downloaded from EDGAR and uploaded to S3...")
             else:
                 # Download
                 logger.info("File already stored on S3, retrieving and processing...")
-                filing_buffer = openedgar.clients.s3.get_buffer(filing_path, client=s3_client)
+                filing_buffer = openedgar.clients.s3.get_buffer(filing_path, client=client)
 
             # Parse
             filing_result = process_filing(filing_path, filing_buffer, store_raw=store_raw, store_text=store_text)
@@ -276,7 +284,7 @@ def process_filing_index(s3_path: str, filing_index_buffer: Union[str, bytes] = 
                 create_filing_error(row, filing_path)
 
     # Create a filing index record
-    edgar_url = "/Archives/{0}".format(s3_path).replace("//", "/")
+    edgar_url = "/Archives/{0}".format(file_path).replace("//", "/")
     try:
         filing_index = FilingIndex.objects.get(edgar_url=edgar_url)
         filing_index.total_record_count = filing_index_data.shape[0]

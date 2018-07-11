@@ -33,12 +33,21 @@ formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
 console.setFormatter(formatter)
 logger.addHandler(console)
 
-def path_exists(path: str, client=None):
-  return os.path.exists(path)
+class LocalClient:
 
-def put_buffer(file_path: str, buffer):
-  dir_name = os.path.dirname(file_path)
-  if not os.path.exists(dir_name):
-    os.makedirs(dir_name)
-  with open(file_path, mode='wb') as localfile:
-    localfile.write(buffer)
+  def __init__(self):
+    logger.info("Initialized local client")
+
+  def path_exists(self, path: str, client=None):
+    return os.path.exists(path)
+
+  def put_buffer(self, file_path: str, buffer):
+    dir_name = os.path.dirname(file_path)
+    if not os.path.exists(dir_name):
+      os.makedirs(dir_name)
+    with open(file_path, mode='wb') as localfile:
+      localfile.write(buffer)
+
+  def get_buffer(self, file_path: str):
+    with open(file_path, mode='rb') as localfile:
+      return localfile.read()
