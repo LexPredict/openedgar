@@ -58,7 +58,7 @@ console.setFormatter(formatter)
 logger.addHandler(console)
 
 
-def create_filing_documents(documents, filing, store_raw: bool = True, store_text: bool = True):
+def create_filing_documents(client, documents, filing, store_raw: bool = True, store_text: bool = True):
     """
     Create filing document records given a list of documents
     and a filing record.
@@ -69,10 +69,7 @@ def create_filing_documents(documents, filing, store_raw: bool = True, store_tex
     :return:
     """
     # Get client if we're using S3
-    if store_raw or store_text:
-        client = openedgar.clients.s3.get_client()
-    else:
-        client = None
+
 
     # Iterate through documents
     document_records = []
@@ -92,11 +89,11 @@ def create_filing_documents(documents, filing, store_raw: bool = True, store_tex
         filing_doc.is_error = len(document["content"]) > 0
         document_records.append(filing_doc)
 
-        # Upload raw to S3 if requested
+        # Upload raw if requested
         if store_raw and len(document["content"]) > 0:
-            raw_s3_path = pathlib.Path(S3_DOCUMENT_PATH, "raw", document["sha1"]).as_posix()
-            if not openedgar.clients.s3.path_exists(raw_s3_path):
-                openedgar.clients.s3.put_buffer(raw_s3_path, document["content"], client)
+            raw_path = pathlib.Path(S3_DOCUMENT_PATH, "raw", document["sha1"]).as_posix()
+            if not client.path_exists(raw_path):
+                client.put_buffer(raw_path, document["content"])
                 logger.info("Uploaded raw file for filing={0}, sequence={1}, sha1={2}"
                             .format(filing, document["sequence"], document["sha1"]))
             else:
@@ -105,9 +102,9 @@ def create_filing_documents(documents, filing, store_raw: bool = True, store_tex
 
         # Upload text to S3 if requested
         if store_text and document["content_text"] is not None:
-            text_s3_path = pathlib.Path(S3_DOCUMENT_PATH, "text", document["sha1"]).as_posix()
-            if not openedgar.clients.s3.path_exists(text_s3_path):
-                openedgar.clients.s3.put_buffer(text_s3_path, document["content_text"], client)
+            raw_path = pathlib.Path(S3_DOCUMENT_PATH, "text", document["sha1"]).as_posix()
+            if not client.path_exists(raw_path):
+                client.put_buffer(raw_path, document["content_text"])
                 logger.info("Uploaded text contents for filing={0}, sequence={1}, sha1={2}"
                             .format(filing, document["sequence"], document["sha1"]))
             else:
@@ -189,7 +186,7 @@ def create_filing_error(row, filing_path: str):
 
 
 @shared_task
-def process_filing_index(file_path: str, filing_index_buffer: Union[str, bytes] = None,
+def process_filing_index(client_type: str, file_path: str, filing_index_buffer: Union[str, bytes] = None,
                          form_type_list: Iterable[str] = None, store_raw: bool = False, store_text: bool = False,
                          use_local: bool = False):
     """
@@ -204,10 +201,7 @@ def process_filing_index(file_path: str, filing_index_buffer: Union[str, bytes] 
     # Log entry
     logger.info("Processing filing index {0}...".format(file_path))
 
-    # Create S3 client
-    configured_client = os.environ["CLIENT_TYPE"]
-
-    if configured_client is None or configured_client == "S3":
+    if client_type == "S3":
         client = S3Client()
     else:
         client = LocalClient()
@@ -256,7 +250,7 @@ def process_filing_index(file_path: str, filing_index_buffer: Union[str, bytes] 
             logger.info("Raw exception: {0}".format(f))
 
             # Check if exists; download and upload to S3 if missing
-            if not openedgar.clients.s3.path_exists(filing_path, client=client):
+            if not client.path_exists(filing_path):
                 # Download
                 try:
                     filing_buffer, _ = openedgar.clients.edgar.get_buffer("/Archives/{0}".format(filing_path))
@@ -267,13 +261,13 @@ def process_filing_index(file_path: str, filing_index_buffer: Union[str, bytes] 
                     continue
 
                 # Upload
-                openedgar.clients.s3.put_buffer(filing_path, filing_buffer, client=client)
+                client.put_buffer(filing_path, filing_buffer)
 
-                logger.info("Downloaded from EDGAR and uploaded to S3...")
+                logger.info("Downloaded from EDGAR and uploaded to {}...".format(client_type))
             else:
                 # Download
-                logger.info("File already stored on S3, retrieving and processing...")
-                filing_buffer = openedgar.clients.s3.get_buffer(filing_path, client=client)
+                logger.info("File already stored on {}, retrieving and processing...".format(client_type))
+                filing_buffer = client.get_buffer(filing_path)
 
             # Parse
             filing_result = process_filing(filing_path, filing_buffer, store_raw=store_raw, store_text=store_text)
@@ -309,24 +303,25 @@ def process_filing_index(file_path: str, filing_index_buffer: Union[str, bytes] 
 
 
 @shared_task
-def process_filing(s3_path: str, filing_buffer: Union[str, bytes] = None, store_raw: bool = False,
+def process_filing(client, file_path: str, filing_buffer: Union[str, bytes] = None, store_raw: bool = False,
                    store_text: bool = False):
     """
-    Process a filing from an S3 path or filing buffer.
-    :param s3_path: S3 path to process; if filing_buffer is none, retrieved from here
+    Process a filing from a path or filing buffer.
+    :param file_path: path to process; if filing_buffer is none, retrieved from here
     :param filing_buffer: buffer; if not present, s3_path must be set
     :param store_raw:
     :param store_text:
     :return:
     """
     # Log entry
-    logger.info("Processing filing {0}...".format(s3_path))
+    logger.info("Processing filing {0}...".format(file_path))
+
 
     # Check for existing record first
     try:
-        filing = Filing.objects.get(s3_path=s3_path)
+        filing = Filing.objects.get(s3_path=file_path)
         if filing is not None:
-            logger.error("Filing {0} has already been created in record {1}".format(s3_path, filing))
+            logger.error("Filing {0} has already been created in record {1}".format(file_path, filing))
             return None
     except Filing.DoesNotExist:
         logger.info("No existing record found.")
@@ -337,12 +332,12 @@ def process_filing(s3_path: str, filing_buffer: Union[str, bytes] = None, store_
     # Get buffer
     if filing_buffer is None:
         logger.info("Retrieving filing buffer from S3...")
-        filing_buffer = openedgar.clients.s3.get_buffer(s3_path)
+        filing_buffer = client.get_buffer(file_path)
 
     # Get main filing data structure
     filing_data = openedgar.parsers.edgar.parse_filing(filing_buffer, extract=store_text)
     if filing_data["cik"] is None:
-        logger.error("Unable to parse CIK from filing {0}; assuming broken and halting...".format(s3_path))
+        logger.error("Unable to parse CIK from filing {0}; assuming broken and halting...".format(file_path))
         return None
 
     try:
@@ -405,7 +400,7 @@ def process_filing(s3_path: str, filing_buffer: Union[str, bytes] = None, store_
         filing.document_count = filing_data["document_count"]
         filing.company = company
         filing.sha1 = hashlib.sha1(filing_buffer).hexdigest()
-        filing.s3_path = s3_path
+        filing.s3_path = file_path
         filing.is_processed = False
         filing.is_error = True
         filing.save()
@@ -415,7 +410,7 @@ def process_filing(s3_path: str, filing_buffer: Union[str, bytes] = None, store_
 
     # Create filing document records
     try:
-        create_filing_documents(filing_data["documents"], filing, store_raw=store_raw, store_text=store_text)
+        create_filing_documents(client, filing_data["documents"], filing, store_raw=store_raw, store_text=store_text)
         filing.is_processed = True
         filing.is_error = False
         filing.save()
@@ -426,24 +421,27 @@ def process_filing(s3_path: str, filing_buffer: Union[str, bytes] = None, store_
 
 
 @shared_task
-def extract_filing(s3_path: str, filing_buffer: Union[str, bytes] = None):
+def extract_filing(client, file_path: str, filing_buffer: Union[str, bytes] = None):
     """
     Extract the contents of a filing from an S3 path or filing buffer.
-    :param s3_path: S3 path to process; if filing_buffer is none, retrieved from here
+    :param file_path: S3 path to process; if filing_buffer is none, retrieved from here
     :param filing_buffer: buffer; if not present, s3_path must be set
     :return:
     """
     # Get buffer
+
+
+
     if filing_buffer is None:
         logger.info("Retrieving filing buffer from S3...")
-        filing_buffer = openedgar.clients.s3.get_buffer(s3_path)
+        filing_buffer = client.get_buffer(file_path)
 
     # Get main filing data structure
     _ = openedgar.parsers.edgar.parse_filing(filing_buffer)
 
 
 @shared_task
-def search_filing_document_sha1(sha1: str, term_list: Iterable[str], search_query_id: int, document_id: int,
+def search_filing_document_sha1(client, sha1: str, term_list: Iterable[str], search_query_id: int, document_id: int,
                                 case_sensitive: bool = False,
                                 token_search: bool = False, stem_search: bool = False):
     """
@@ -460,7 +458,7 @@ def search_filing_document_sha1(sha1: str, term_list: Iterable[str], search_quer
     # Get buffer
     logger.info("Retrieving buffer from S3...")
     text_s3_path = pathlib.Path(S3_DOCUMENT_PATH, "text", sha1).as_posix()
-    document_buffer = openedgar.clients.s3.get_buffer(text_s3_path).decode("utf-8")
+    document_buffer = client.get_buffer(text_s3_path).decode("utf-8")
 
     # Check if case
     if not case_sensitive:
@@ -518,7 +516,7 @@ def search_filing_document_sha1(sha1: str, term_list: Iterable[str], search_quer
 
 
 @shared_task
-def extract_filing_document_data_sha1(sha1: str):
+def extract_filing_document_data_sha1(client, sha1: str):
     """
     Extract structured data from a filing document by sha1 hash, e.g.,
     dates, money, noun phrases.
@@ -529,7 +527,7 @@ def extract_filing_document_data_sha1(sha1: str):
     # Get buffer
     logger.info("Retrieving buffer from S3...")
     text_s3_path = pathlib.Path(S3_DOCUMENT_PATH, "text", sha1).as_posix()
-    document_buffer = openedgar.clients.s3.get_buffer(text_s3_path).decode("utf-8")
+    document_buffer = client.get_buffer(text_s3_path).decode("utf-8")
 
     # TODO: Build your own database here.
     _ = len(document_buffer)

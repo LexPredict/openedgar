@@ -37,9 +37,9 @@ from openedgar.tasks import process_filing_index, search_filing_document_sha1
 
 # Logging setup
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.ERROR)
 console = logging.StreamHandler()
-console.setLevel(logging.INFO)
+console.setLevel(logging.ERROR)
 formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
 console.setFormatter(formatter)
 logger.addHandler(console)
@@ -119,16 +119,18 @@ def process_all_filing_index(year: int = None, form_type_list: Iterable[str] = N
     # Get the list of file paths
     file_path_list = download_filing_index_data(year)
 
+    client_type = os.environ["CLIENT_TYPE"] or "S3"
+
     # Process each file
     for s3_path, _, is_processed in file_path_list:
         # Skip if only processing new files and this one is old
         if new_only and not is_processed:
             logger.info("Processing filing index for {0}...".format(s3_path))
-            _ = process_filing_index.delay(s3_path, form_type_list=form_type_list, store_raw=store_raw,
+            _ = process_filing_index.delay(client_type, s3_path, form_type_list=form_type_list, store_raw=store_raw,
                                            store_text=store_text)
         elif not new_only:
             logger.info("Processing filing index for {0}...".format(s3_path))
-            _ = process_filing_index.delay(s3_path, form_type_list=form_type_list, store_raw=store_raw,
+            _ = process_filing_index.delay(client_type, s3_path, form_type_list=form_type_list, store_raw=store_raw,
                                            store_text=store_text)
         else:
             logger.info("Skipping process_filing_index for {0}...".format(s3_path))
