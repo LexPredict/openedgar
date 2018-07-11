@@ -270,7 +270,7 @@ def process_filing_index(client_type: str, file_path: str, filing_index_buffer: 
                 filing_buffer = client.get_buffer(filing_path)
 
             # Parse
-            filing_result = process_filing(filing_path, filing_buffer, store_raw=store_raw, store_text=store_text)
+            filing_result = process_filing(client, filing_path, filing_buffer, store_raw=store_raw, store_text=store_text)
             if filing_result is None:
                 logger.error("Unable to process filing.")
                 bad_record_count += 1
