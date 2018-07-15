@@ -104,7 +104,7 @@ def create_filing_documents(client, documents, filing, store_raw: bool = True, s
         if store_text and document["content_text"] is not None:
             raw_path = pathlib.Path(S3_DOCUMENT_PATH, "text", document["sha1"]).as_posix()
             if not client.path_exists(raw_path):
-                client.put_buffer(raw_path, document["content_text"])
+                client.put_buffer(raw_path, document["content_text"], write_bytes=False)
                 logger.info("Uploaded text contents for filing={0}, sequence={1}, sha1={2}"
                             .format(filing, document["sequence"], document["sha1"]))
             else:

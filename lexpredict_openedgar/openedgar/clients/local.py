@@ -42,11 +42,15 @@ class LocalClient:
     def path_exists(self, path: str, client=None):
         return os.path.exists(path)
 
-    def put_buffer(self, file_path: str, buffer):
+    def put_buffer(self, file_path: str, buffer, write_bytes=True):
         dir_name = os.path.dirname(file_path)
         if not os.path.exists(dir_name):
             os.makedirs(dir_name)
-        with open(file_path, mode='wb') as localfile:
+        if write_bytes:
+            mode="wb"
+        else:
+            mode="w"
+        with open(file_path, mode=mode) as localfile:
             localfile.write(buffer)
 
     def get_buffer(self, file_path: str):
