@@ -22,10 +22,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-import openedgar.clients.s3
+from openedgar.clients.s3 import S3Client
 import openedgar.tasks
 from config.settings.base import S3_BUCKET
-
 
 def test_process_filing():
     """
@@ -36,5 +35,6 @@ def test_process_filing():
         # Catch inside testing
         return True
     else:
-        buffer = openedgar.clients.s3.get_buffer("edgar/data/1000180/0000950134-05-005462.txt")
+        client = S3Client()
+        buffer = client.get_buffer("edgar/data/1000180/0000950134-05-005462.txt")
         openedgar.tasks.process_filing(buffer)

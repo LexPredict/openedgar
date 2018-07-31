@@ -187,8 +187,7 @@ def create_filing_error(row, filing_path: str):
 
 @shared_task
 def process_filing_index(client_type: str, file_path: str, filing_index_buffer: Union[str, bytes] = None,
-                         form_type_list: Iterable[str] = None, store_raw: bool = False, store_text: bool = False,
-                         use_local: bool = False):
+                         form_type_list: Iterable[str] = None, store_raw: bool = False, store_text: bool = False):
     """
     Process a filing index from an S3 path or buffer.
     :param file_path: S3 or local path to process; if filing_index_buffer is none, retrieved from here

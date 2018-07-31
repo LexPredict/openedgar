@@ -39,7 +39,7 @@ class LocalClient:
     def __init__(self):
         logger.info("Initialized local client")
 
-    def path_exists(self, path: str, client=None):
+    def path_exists(self, path: str):
         return os.path.exists(path)
 
     def put_buffer(self, file_path: str, buffer, write_bytes=True):
