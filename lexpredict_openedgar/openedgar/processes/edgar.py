@@ -25,19 +25,21 @@ SOFTWARE.
 # Libraries
 from typing import Iterable
 import logging
-
+import os
 # Project
 import openedgar.clients.edgar
-import openedgar.clients.s3
+from openedgar.clients.s3 import S3Client
+from openedgar.clients.local import LocalClient
+import openedgar.clients.local
 import openedgar.parsers.edgar
 from openedgar.models import FilingDocument, SearchQueryTerm, SearchQuery, FilingIndex
 from openedgar.tasks import process_filing_index, search_filing_document_sha1
 
 # Logging setup
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.ERROR)
 console = logging.StreamHandler()
-console.setLevel(logging.INFO)
+console.setLevel(logging.ERROR)
 formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
 console.setFormatter(formatter)
 logger.addHandler(console)
@@ -55,19 +57,25 @@ def download_filing_index_data(year: int = None):
     else:
         filing_index_list = openedgar.clients.edgar.list_index()
 
-    # Create S3 client
-    s3_client = openedgar.clients.s3.get_client()
+    path_list = []
+    configured_client = os.environ["CLIENT_TYPE"]
+    logger.info(msg="Configured client is: {}".format(configured_client))
+    path_prefix = str()
 
-    # Track S3 path lists for return
-    s3_path_list = []
+    if configured_client is None or configured_client == "S3":
+        # Create S3 client
+        download_client = S3Client()
+    else:
+        download_client = LocalClient()
+        path_prefix = os.environ["DOWNLOAD_PATH"]
 
     # Now iterate through list to check if already on S3
     for filing_index_path in filing_index_list:
         # Cleanup path
         if filing_index_path.startswith("/Archives/"):
-            s3_path = filing_index_path[len("/Archives/"):]
+            file_path = os.path.join(path_prefix, filing_index_path[len("/Archives/"):])
         else:
-            s3_path = filing_index_path
+            file_path = os.path.join(path_prefix, filing_index_path)
 
         # Check if exists in database
         try:
@@ -79,21 +87,21 @@ def download_filing_index_data(year: int = None):
             logger.info("Index {0} does not exist in DB.".format(filing_index_path))
 
         # Check if exists; download and upload to S3 if missing
-        if not openedgar.clients.s3.path_exists(s3_path, client=s3_client):
+        if not download_client.path_exists(file_path):
             # Download
             buffer, _ = openedgar.clients.edgar.get_buffer(filing_index_path)
 
             # Upload
-            openedgar.clients.s3.put_buffer(s3_path, buffer, client=s3_client)
+            download_client.put_buffer(file_path, buffer)
 
             logger.info("Retrieved {0} and uploaded to S3.".format(filing_index_path))
-            s3_path_list.append((s3_path, True, is_processed))
+            path_list.append((file_path, True, is_processed))
         else:
             logger.info("Index {0} already exists on S3.".format(filing_index_path))
-            s3_path_list.append((s3_path, False, is_processed))
+            path_list.append((file_path, False, is_processed))
 
     # Return list of updates
-    return s3_path_list
+    return path_list
 
 
 def process_all_filing_index(year: int = None, form_type_list: Iterable[str] = None, new_only: bool = False,
@@ -108,19 +116,21 @@ def process_all_filing_index(year: int = None, form_type_list: Iterable[str] = N
     :param store_text:
     :return:
     """
-    # Get the list of S3 paths
-    s3_path_list = download_filing_index_data(year)
+    # Get the list of file paths
+    file_path_list = download_filing_index_data(year)
+
+    client_type = os.environ["CLIENT_TYPE"] or "S3"
 
     # Process each file
-    for s3_path, _, is_processed in s3_path_list:
+    for s3_path, _, is_processed in file_path_list:
         # Skip if only processing new files and this one is old
         if new_only and not is_processed:
             logger.info("Processing filing index for {0}...".format(s3_path))
-            _ = process_filing_index.delay(s3_path, form_type_list=form_type_list, store_raw=store_raw,
+            _ = process_filing_index.delay(client_type, s3_path, form_type_list=form_type_list, store_raw=store_raw,
                                            store_text=store_text)
         elif not new_only:
             logger.info("Processing filing index for {0}...".format(s3_path))
-            _ = process_filing_index.delay(s3_path, form_type_list=form_type_list, store_raw=store_raw,
+            _ = process_filing_index.delay(client_type, s3_path, form_type_list=form_type_list, store_raw=store_raw,
                                            store_text=store_text)
         else:
             logger.info("Skipping process_filing_index for {0}...".format(s3_path))

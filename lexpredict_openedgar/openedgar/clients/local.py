@@ -1,8 +1,6 @@
 """
 MIT License
 
-Copyright (c) 2018 ContraxSuite, LLC
-
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
@@ -22,19 +20,39 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
-from openedgar.clients.s3 import S3Client
-import openedgar.tasks
-from config.settings.base import S3_BUCKET
+# Libraries
+import logging
+import os
 
-def test_process_filing():
-    """
-    Test process_filing
-    :return:
-    """
-    if not S3_BUCKET:
-        # Catch inside testing
-        return True
-    else:
-        client = S3Client()
-        buffer = client.get_buffer("edgar/data/1000180/0000950134-05-005462.txt")
-        openedgar.tasks.process_filing(buffer)
+# Setup logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+console = logging.StreamHandler()
+console.setLevel(logging.INFO)
+formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+console.setFormatter(formatter)
+logger.addHandler(console)
+
+
+class LocalClient:
+
+    def __init__(self):
+        logger.info("Initialized local client")
+
+    def path_exists(self, path: str):
+        return os.path.exists(path)
+
+    def put_buffer(self, file_path: str, buffer, write_bytes=True):
+        dir_name = os.path.dirname(file_path)
+        if not os.path.exists(dir_name):
+            os.makedirs(dir_name)
+        if write_bytes:
+            mode="wb"
+        else:
+            mode="w"
+        with open(file_path, mode=mode) as localfile:
+            localfile.write(buffer)
+
+    def get_buffer(self, file_path: str):
+        with open(file_path, mode='rb') as localfile:
+            return localfile.read()

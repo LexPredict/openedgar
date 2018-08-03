@@ -57,7 +57,7 @@ an AWS account is required for S3 usage and performance will be substantially re
     
     c. `$ ./env/bin/pip install -r lexpredict_openedgar/requirements/full.txt`
     
-12. Setup database
+12. Setup database. Note that the password chosen for openegar must be set as DJANGO_PASSWORD in the .env later
 
     a. `$ sudo -u postgres createuser -l -P -s openedgar`
     
@@ -101,7 +101,7 @@ an AWS account is required for S3 usage and performance will be substantially re
     $ sudo systemctl status rabbitmq-server.service
     ```
 
-14. Update .env file
+14. Update .env file. For local testing (downloading files locally, instead of to S3), set CLIENT_TYPE to LOCAL and DOWNLOAD_PATH to a local path
 
     a. `$ cp lexpredict_openedgar/sample.env lexpredict_openedgar/.env`
     
