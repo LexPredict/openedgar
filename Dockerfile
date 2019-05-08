@@ -17,15 +17,16 @@ RUN apt-get install -y openjdk-8-jdk
 # Clone OpenEDGAR repository
 WORKDIR /opt
 RUN mkdir /opt/openedgar
-COPY lexpredict_openedgar/ /opt/openedgar/lexpredict_openedgar/
 
 # Set up Python venv
 WORKDIR /opt/openedgar/
 RUN virtualenv -p /usr/bin/python3 env
+COPY lexpredict_openedgar/requirements/full.txt lexpredict_openedgar/requirements/full.txt
 RUN ./env/bin/pip install -r lexpredict_openedgar/requirements/full.txt
 RUN ./env/bin/pip install azure-mgmt-resource azure-mgmt-datalake-store azure-datalake-store
-
 COPY tika/tika-server-1.20.jar /opt/openedgar/tika/tika-server-1.20.jar
+COPY lexpredict_openedgar/ /opt/openedgar/lexpredict_openedgar/
+
 COPY docker/default.env /opt/openedgar/
 RUN cp lexpredict_openedgar/sample.env lexpredict_openedgar/.env
 #COPY docker/erlang-solutions_1.0_all.deb lexpredict_openedgar/erlang-solutions_1.0_all.deb
