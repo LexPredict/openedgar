@@ -125,7 +125,6 @@ def parse_index_file(file_name: str, double_gz: bool = False):
         with gzip.open(file_name, "rb") as index_file:
             index_buffer = index_file.read()
     except IOError as e:
-        logger.error("IOError parsing {0}: {1}".format(file_name, e))
         # Read as plain binary
         with open(file_name, "rb") as index_file:
             index_buffer = index_file.read()
@@ -135,6 +134,8 @@ def parse_index_file(file_name: str, double_gz: bool = False):
             index_buffer = zlib.decompress(index_buffer).decode("utf-8")
             logger.info("gz with valid header: decompressing {0} to {1} bytes.".format(file_name,
                                                                                        len(index_buffer)))
+        else:
+            logger.info("IOError parsing {0}: {1}".format(file_name, e))
 
         # Check for double-gz
         if double_gz:
@@ -218,6 +219,29 @@ def extract_filing_header_field(buffer: Union[bytes, str], field: str):
     return buffer[p0:p1].strip()
 
 
+def decode_filing(to_decode: Union[bytes, str]) -> Union[str, None]:
+    buffer = to_decode
+    if isinstance(buffer, bytes):
+        try:
+            # Start with UTF-8
+            buffer = str(buffer.decode("utf-8"))
+        except UnicodeDecodeError as _:
+            try:
+                # Fallback to ISO 8859-1
+                logger.warning("Falling back to ISO 8859-1 after failing to decode with UTF-8...")
+                buffer = str(buffer.decode("iso-8859-1"))
+            except UnicodeDecodeError as _:
+                try:
+                    # Fallback to ISO 8859-15
+                    logger.warning("Falling back to ISO 8859-15 after failing to decode with UTF-8...")
+                    buffer = str(buffer.decode("iso-8859-5"))
+                except UnicodeDecodeError as _:
+                    # Give up if we can't
+                    logger.error("Unable to decode with either UTF-8 or ISO 8859-1; giving up...")
+                    return None
+    return buffer
+
+
 def parse_filing(buffer: Union[bytes, str], extract: bool = False):
     """
     Parse a filing file by returning each document within
@@ -243,18 +267,9 @@ def parse_filing(buffer: Union[bytes, str], extract: bool = False):
 
     # Typing
     if isinstance(buffer, bytes):
-        try:
-            # Start with UTF-8
-            buffer = str(buffer.decode("utf-8"))
-        except UnicodeDecodeError as _:
-            try:
-                # Fallback to ISO 8859-1
-                logger.warning("Falling back to ISO 8859-1 after failing to decode with UTF-8...")
-                buffer = str(buffer.decode("iso-8859-1"))
-            except UnicodeDecodeError as _:
-                # Give up if we can't
-                logger.error("Unable to decode with either UTF-8 or ISO 8859-1; giving up...")
-                return filing_data
+        buffer = decode_filing(buffer)
+    if buffer is None:
+        return filing_data
 
     # Check for SEC-HEADER block
     if "<SEC-HEADER>" in buffer or "<IMS-HEADER>" in buffer:

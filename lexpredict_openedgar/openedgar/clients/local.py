@@ -48,9 +48,11 @@ class LocalClient:
             os.makedirs(dir_name)
         if write_bytes:
             mode="wb"
+            encoding = None
         else:
             mode="w"
-        with open(file_path, mode=mode) as localfile:
+            encoding="utf-8"
+        with open(file_path, mode=mode, encoding=encoding) as localfile:
             localfile.write(buffer)
 
     def get_buffer(self, file_path: str):
