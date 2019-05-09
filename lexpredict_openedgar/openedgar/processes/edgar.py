@@ -46,7 +46,7 @@ console.setFormatter(formatter)
 logger.addHandler(console)
 
 
-def download_filing_index_data(year: int = None):
+def download_filing_index_data(year: int = None, quarter: int = None, month: int = None):
     """
     Download all filing index data.
     :param year:
@@ -54,7 +54,12 @@ def download_filing_index_data(year: int = None):
     """
     # Get filing index list
     if year is not None:
-        filing_index_list = openedgar.clients.edgar.list_index_by_year(year)
+        if month is not None:
+            filing_index_list = openedgar.clients.edgar.list_index_by_month(year, month)
+        elif quarter is not None:
+            filing_index_list = openedgar.clients.edgar.list_index_by_quarter(year, quarter)
+        else:
+            filing_index_list = openedgar.clients.edgar.list_index_by_year(year)
     else:
         filing_index_list = openedgar.clients.edgar.list_index()
 
@@ -107,7 +112,8 @@ def download_filing_index_data(year: int = None):
     return path_list
 
 
-def process_all_filing_index(year: int = None, form_type_list: Iterable[str] = None, new_only: bool = False,
+def process_all_filing_index(year: int = None, quarter: int = None, month: int = None,
+                             form_type_list: Iterable[str] = None, new_only: bool = False,
                              store_raw: bool = True, store_text: bool = True, store_processed: bool = True):
     """
     Process all filing index data.
@@ -120,7 +126,7 @@ def process_all_filing_index(year: int = None, form_type_list: Iterable[str] = N
     :return:
     """
     # Get the list of file paths
-    file_path_list = download_filing_index_data(year)
+    file_path_list = download_filing_index_data(year, quarter, month)
 
     client_type = os.environ["CLIENT_TYPE"] or "S3"
 

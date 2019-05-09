@@ -185,6 +185,91 @@ def list_index_by_year(year: int):
     return form_index_list
 
 
+def list_index_by_quarter(year: int, quarter: int):
+    """
+    Get list of index files for a given year and quarter.
+    :param year: filing year to retrieve
+    :param quarter: filing quarter to retrieve
+    :return:
+    """
+    # Log entrance
+    logger.info("Locating form index list for {0}".format(year))
+
+    # Form index list
+    year = str(year)
+    form_index_list = []
+
+    # Get year directory list
+    year_index_uri = urllib.parse.urljoin(HTTP_SEC_INDEX_PATH, str(year) + "/")
+    year_root_list = list_path(year_index_uri)
+    print(year_root_list)
+
+    # Get quarters
+    quarter_list = [f for f in year_root_list if "/QTR" in f]
+
+    quarter_string_match = "QTR" + str(quarter)
+
+    # Iterate over quarters
+    for qu in quarter_list:
+        if quarter_string_match in qu:
+            quarter_root_list = list_path(qu)
+            form_index_list.extend([q for q in quarter_root_list if "/form." in q.lower()])
+
+    # Cleanup double /
+    for i in range(len(form_index_list)):
+        form_index_list[i] = form_index_list[i].replace("//", "/")
+
+    # Log exit
+    logger.info("Successfully located {0} form index files for {1}".format(len(form_index_list), year))
+
+    # Return
+    return form_index_list
+
+
+def list_index_by_month(year: int, month: int):
+    """
+    Get list of index files for a given year and month.
+    :param year: filing year to retrieve
+    :param month: filing month to retrieve
+    :return:
+    """
+    # Log entrance
+    logger.info("Locating form index list for {0}".format(year))
+
+    # Form index list
+    year = str(year)
+    form_index_list = []
+
+    # Get year directory list
+    year_index_uri = urllib.parse.urljoin(HTTP_SEC_INDEX_PATH, str(year) + "/")
+    year_root_list = list_path(year_index_uri)
+    print(year_root_list)
+
+    # Get quarters
+    quarter_list = [f for f in year_root_list if "/QTR" in f]
+
+    # company.20190102.idx
+    if int(month) < 10:
+        month = "0" + month
+
+    date_string_match = year + month
+
+    # Iterate over quarters
+    for qu in quarter_list:
+        quarter_root_list = list_path(qu)
+        form_index_list.extend([q for q in quarter_root_list if "/form." + date_string_match in q.lower()])
+
+    # Cleanup double /
+    for i in range(len(form_index_list)):
+        form_index_list[i] = form_index_list[i].replace("//", "/")
+
+    # Log exit
+    logger.info("Successfully located {0} form index files for {1}".format(len(form_index_list), year))
+
+    # Return
+    return form_index_list
+
+
 def list_index(min_year: int = 1950, max_year: int = 2050):
     """
     Get the list of form index files on SEC HTTP.
