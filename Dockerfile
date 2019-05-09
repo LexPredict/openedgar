@@ -33,7 +33,7 @@ RUN cp lexpredict_openedgar/sample.env lexpredict_openedgar/.env
 #COPY tasks.py lexpredict_openedgar/openedgar/tasks.py
 #COPY edgar.py lexpredict_openedgar/openedgar/processes/edgar.py
 #COPY parsers/edgar.py lexpredict_openedgar/openedgar/parsers/edgar.py
-#COPY clients/aks.py lexpredict_openedgar/openedgar/clients/aks.py
+#COPY clients/adl.py lexpredict_openedgar/openedgar/clients/adl.py
 #COPY clients/edgar.py lexpredict_openedgar/openedgar/clients/edgar.py
 COPY docker/oe-entrypoint.sh /usr/local/bin/
 COPY docker/run_edgar.py /opt/openedgar/lexpredict_openedgar/run_edgar.py

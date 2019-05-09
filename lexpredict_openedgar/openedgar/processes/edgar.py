@@ -28,6 +28,7 @@ import logging
 import os
 # Project
 import openedgar.clients.edgar
+from openedgar.clients.adl import ADLClient
 from openedgar.clients.s3 import S3Client
 from openedgar.clients.local import LocalClient
 import openedgar.clients.local
@@ -65,6 +66,8 @@ def download_filing_index_data(year: int = None):
     if configured_client is None or configured_client == "S3":
         # Create S3 client
         download_client = S3Client()
+    elif configured_client == "ADL":
+        download_client = ADLClient()
     else:
         download_client = LocalClient()
         path_prefix = os.environ["DOWNLOAD_PATH"]

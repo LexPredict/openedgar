@@ -337,3 +337,11 @@ S3_COMPRESSION_LEVEL = int(env('S3_COMPRESSION_LEVEL', default=6))
 TIKA_HOST = "localhost"
 TIKA_PORT = 9998
 TIKA_ENDPOINT = "http://{0}:{1}/tika".format(TIKA_HOST, TIKA_PORT)
+
+# Azure data Lake
+ADL_ACCOUNT = env('ADL_ACCOUNT', default="")
+ADL_TENANT = env('ADL_TENANT', default="")
+# Client ID
+ADL_CID= env('ADL_CID', default="")
+# Client secret/password
+ADL_SECRET = env('ADL_SECRET', default="")
