@@ -39,7 +39,7 @@ import django.db.utils
 from celery import shared_task
 
 # Project
-from config.settings.base import S3_DOCUMENT_PATH
+from config.settings.base import S3_DOCUMENT_PATH, DOWNLOAD_PATH
 from openedgar.clients.adl import ADLClient
 from openedgar.clients.s3 import S3Client
 from openedgar.clients.local import LocalClient
@@ -209,6 +209,7 @@ def process_filing_index(client_type: str, file_path: str, filing_index_buffer: 
                          store_processed: bool = False):
     """
     Process a filing index from an S3 path or buffer.
+    :param client_type:
     :param file_path: S3 or local path to process; if filing_index_buffer is none, retrieved from here
     :param filing_index_buffer: buffer; if not present, s3_path must be set
     :param form_type_list: optional list of form type to process
@@ -283,7 +284,7 @@ def process_filing_index(client_type: str, file_path: str, filing_index_buffer: 
                     continue
 
                 # Upload
-                client.put_buffer(filing_path, filing_buffer)
+                client.put_buffer("{}/{}".format(DOWNLOAD_PATH,filing_path), filing_buffer)
 
                 logger.info("Downloaded from EDGAR and uploaded to {}...".format(client_type))
             else:

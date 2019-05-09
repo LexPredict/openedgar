@@ -28,6 +28,7 @@ import logging
 import os
 # Project
 import openedgar.clients.edgar
+from config.settings.base import DOWNLOAD_PATH
 from openedgar.clients.adl import ADLClient
 from openedgar.clients.s3 import S3Client
 from openedgar.clients.local import LocalClient
@@ -49,6 +50,8 @@ logger.addHandler(console)
 def download_filing_index_data(year: int = None, quarter: int = None, month: int = None):
     """
     Download all filing index data.
+    :param month:
+    :param quarter:
     :param year:
     :return:
     """
@@ -65,7 +68,7 @@ def download_filing_index_data(year: int = None, quarter: int = None, month: int
 
     path_list = []
     configured_client = os.environ["CLIENT_TYPE"]
-    logger.info(msg="Configured client is: {}".format(configured_client))
+    logger.info("Configured client is: {}".format(configured_client))
     path_prefix = str()
 
     if configured_client is None or configured_client == "S3":
@@ -75,7 +78,7 @@ def download_filing_index_data(year: int = None, quarter: int = None, month: int
         download_client = ADLClient()
     else:
         download_client = LocalClient()
-        path_prefix = os.environ["DOWNLOAD_PATH"]
+    path_prefix = DOWNLOAD_PATH
 
     # Now iterate through list to check if already on S3
     for filing_index_path in filing_index_list:

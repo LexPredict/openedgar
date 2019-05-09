@@ -250,7 +250,7 @@ def list_index_by_month(year: int, month: int):
 
     # company.20190102.idx
     if int(month) < 10:
-        month = "0" + month
+        month = "0{}".format(month)
 
     date_string_match = year + month
 
