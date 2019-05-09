@@ -105,8 +105,7 @@ def download_filing_index_data(year: int = None):
 
 
 def process_all_filing_index(year: int = None, form_type_list: Iterable[str] = None, new_only: bool = False,
-                             store_raw: bool = True,
-                             store_text: bool = True):
+                             store_raw: bool = True, store_text: bool = True, store_processed: bool = True):
     """
     Process all filing index data.
     :type year: optional year to process
@@ -114,6 +113,7 @@ def process_all_filing_index(year: int = None, form_type_list: Iterable[str] = N
     :param new_only:
     :param store_raw:
     :param store_text:
+    :param store_processed:
     :return:
     """
     # Get the list of file paths
@@ -127,11 +127,11 @@ def process_all_filing_index(year: int = None, form_type_list: Iterable[str] = N
         if new_only and not is_processed:
             logger.info("Processing filing index for {0}...".format(s3_path))
             _ = process_filing_index.delay(client_type, s3_path, form_type_list=form_type_list, store_raw=store_raw,
-                                           store_text=store_text)
+                                           store_text=store_text, store_processed=store_processed)
         elif not new_only:
             logger.info("Processing filing index for {0}...".format(s3_path))
             _ = process_filing_index.delay(client_type, s3_path, form_type_list=form_type_list, store_raw=store_raw,
-                                           store_text=store_text)
+                                           store_text=store_text, store_processed=store_processed)
         else:
             logger.info("Skipping process_filing_index for {0}...".format(s3_path))
 
