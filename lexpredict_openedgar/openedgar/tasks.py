@@ -50,9 +50,9 @@ import lexnlp.nlp.en.tokens
 
 # Logging setup
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.WARNING)
+logger.setLevel(logging.INFO)
 console = logging.StreamHandler()
-console.setLevel(logging.WARNING)
+console.setLevel(logging.INFO)
 formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
 console.setFormatter(formatter)
 logger.addHandler(console)
@@ -217,7 +217,7 @@ def process_filing_index(client_type: str, file_path: str, filing_index_buffer: 
 
     # Get main filing data structure
     filing_index_data = openedgar.parsers.edgar.parse_index_file(temp_file.name)
-    logger.info("Parsed {0} records from index".format(filing_index_data.shape[0]))
+    logger.warning("Parsed {0} records from index".format(filing_index_data.shape[0]))
 
     # Iterate through rows
     bad_record_count = 0
@@ -241,8 +241,9 @@ def process_filing_index(client_type: str, file_path: str, filing_index_buffer: 
         except Filing.MultipleObjectsReturned as e:
             # Create new filing record
             logger.error("Multiple Filing records found for s3_path={0}, skipping...".format(filing_path))
-            logger.info("Raw exception: {0}".format(e))
-            continue
+            filing=Filing.objects.filter(s3_path=filing_path).first()
+            logger.warning("Getting the first one: {0}".format(filing))
+            logger.warning("Raw exception: {0}".format(e))
         except Filing.DoesNotExist as f:
             # Create new filing record
             logger.info("No Filing record found for {0}, creating...".format(filing_path))

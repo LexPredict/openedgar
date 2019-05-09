@@ -37,9 +37,9 @@ from openedgar.tasks import process_filing_index, search_filing_document_sha1
 
 # Logging setup
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.INFO)
 console = logging.StreamHandler()
-console.setLevel(logging.ERROR)
+console.setLevel(logging.INFO)
 formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
 console.setFormatter(formatter)
 logger.addHandler(console)
@@ -81,10 +81,10 @@ def download_filing_index_data(year: int = None):
         try:
             filing_index = FilingIndex.objects.get(edgar_url=filing_index_path)
             is_processed = filing_index.is_processed
-            logger.info("Index {0} already exists in DB.".format(filing_index_path))
+            logger.debug("Index {0} already exists in DB.".format(filing_index_path))
         except FilingIndex.DoesNotExist:
             is_processed = False
-            logger.info("Index {0} does not exist in DB.".format(filing_index_path))
+            logger.debug("Index {0} does not exist in DB.".format(filing_index_path))
 
         # Check if exists; download and upload to S3 if missing
         if not download_client.path_exists(file_path):
@@ -94,10 +94,10 @@ def download_filing_index_data(year: int = None):
             # Upload
             download_client.put_buffer(file_path, buffer)
 
-            logger.info("Retrieved {0} and uploaded to S3.".format(filing_index_path))
+            logger.debug("Retrieved {0} and uploaded to S3.".format(filing_index_path))
             path_list.append((file_path, True, is_processed))
         else:
-            logger.info("Index {0} already exists on S3.".format(filing_index_path))
+            logger.debug("Index {0} already exists on S3.".format(filing_index_path))
             path_list.append((file_path, False, is_processed))
 
     # Return list of updates
@@ -179,7 +179,7 @@ def search_filing_documents(term_list: Iterable[str], form_type_list: Iterable[s
                                           stem_search=stem_search)
         n += 1
 
-    logger.info("Searching {0} documents for {1} terms...".format(n, len(term_list)))
+    logger.debug("Searching {0} documents for {1} terms...".format(n, len(term_list)))
 
 
 def export_filing_document_search(search_query_id: int, output_file_path: str):
