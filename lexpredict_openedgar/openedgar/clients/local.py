@@ -47,11 +47,11 @@ class LocalClient:
         if not os.path.exists(dir_name):
             os.makedirs(dir_name)
         if write_bytes:
-            mode="wb"
+            mode = "wb"
             encoding = None
         else:
-            mode="w"
-            encoding="utf-8"
+            mode = "w"
+            encoding = "utf-8"
         with open(file_path, mode=mode, encoding=encoding) as localfile:
             localfile.write(buffer)
 

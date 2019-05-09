@@ -51,6 +51,8 @@ from openedgar.models import Filing, CompanyInfo, Company, FilingDocument, Searc
 import lexnlp.nlp.en.tokens
 
 # Logging setup
+from openedgar.process_text import html_to_text
+
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 console = logging.StreamHandler()
@@ -60,7 +62,8 @@ console.setFormatter(formatter)
 logger.addHandler(console)
 
 
-def create_filing_documents(client, documents, filing, store_raw: bool = True, store_text: bool = True):
+def create_filing_documents(client, documents, filing, store_raw: bool = True, store_text: bool = True,
+                            store_processed=True):
     """
     Create filing document records given a list of documents
     and a filing record.
@@ -68,6 +71,7 @@ def create_filing_documents(client, documents, filing, store_raw: bool = True, s
     :param filing: Filing record
     :param store_raw: whether to store raw contents
     :param store_text: whether to store text contents
+    :param store_processed: whether to extract the text from the contents
     :return:
     """
     # Get client if we're using S3
@@ -97,6 +101,18 @@ def create_filing_documents(client, documents, filing, store_raw: bool = True, s
             else:
                 logger.info("Text contents for filing={0}, sequence={1}, sha1={2} already exists on S3"
                             .format(filing, document["sequence"], document["sha1"]))
+
+        if store_processed and document["content_text"] is not None:
+            text_path = pathlib.Path(S3_DOCUMENT_PATH, "processed", document["sha1"]).as_posix()
+            if not client.path_exists(text_path):
+                text = html_to_text(document["content_text"])
+                client.put_buffer(text_path, text, write_bytes=False)
+                logger.info("Processed text contents for filing={0}, sequence={1}, sha1={2}"
+                            .format(filing, document["sequence"], document["sha1"]))
+            else:
+                logger.info("Processed text contents for filing={0}, sequence={1}, sha1={2} already exists"
+                            .format(filing, document["sequence"], document["sha1"]))
+
         # Create DB object
         filing_doc = FilingDocument()
         filing_doc.filing = filing
@@ -188,7 +204,8 @@ def create_filing_error(row, filing_path: str):
 
 @shared_task
 def process_filing_index(client_type: str, file_path: str, filing_index_buffer: Union[str, bytes] = None,
-                         form_type_list: Iterable[str] = None, store_raw: bool = False, store_text: bool = False):
+                         form_type_list: Iterable[str] = None, store_raw: bool = False, store_text: bool = False,
+                         store_processed: bool = False):
     """
     Process a filing index from an S3 path or buffer.
     :param file_path: S3 or local path to process; if filing_index_buffer is none, retrieved from here
@@ -196,6 +213,7 @@ def process_filing_index(client_type: str, file_path: str, filing_index_buffer: 
     :param form_type_list: optional list of form type to process
     :param store_raw:
     :param store_text:
+    :param store_processed:
     :return:
     """
     # Log entry
@@ -272,7 +290,7 @@ def process_filing_index(client_type: str, file_path: str, filing_index_buffer: 
 
             # Parse
             filing_result = process_filing(client, filing_path, filing_buffer, store_raw=store_raw,
-                                           store_text=store_text)
+                                           store_text=store_text, store_processed=store_processed)
             if filing_result is None:
                 logger.error("Unable to process filing.")
                 bad_record_count += 1
@@ -306,13 +324,14 @@ def process_filing_index(client_type: str, file_path: str, filing_index_buffer: 
 
 @shared_task
 def process_filing(client, file_path: str, filing_buffer: Union[str, bytes] = None, store_raw: bool = False,
-                   store_text: bool = False):
+                   store_text: bool = False, store_processed: bool = False):
     """
     Process a filing from a path or filing buffer.
     :param file_path: path to process; if filing_buffer is none, retrieved from here
     :param filing_buffer: buffer; if not present, s3_path must be set
     :param store_raw:
     :param store_text:
+    :param store_processed
     :return:
     """
     # Log entry
@@ -415,7 +434,8 @@ def process_filing(client, file_path: str, filing_buffer: Union[str, bytes] = No
 
     # Create filing document records
     try:
-        create_filing_documents(client, filing_data["documents"], filing, store_raw=store_raw, store_text=store_text)
+        create_filing_documents(client, filing_data["documents"], filing, store_raw=store_raw, store_text=store_text,
+                                store_processed=store_processed)
         filing.is_processed = True
         filing.is_error = False
         filing.save()

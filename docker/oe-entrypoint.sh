@@ -2,6 +2,7 @@
 
 cd /opt/openedgar/lexpredict_openedgar
 export PYTHONIOENCODING=utf-8
+mkdir -p /data/logs
 
 source ../env/bin/activate
 source /opt/openedgar/default.env
@@ -30,7 +31,6 @@ source /opt/openedgar/default.env
 # perform initial migration
 python manage.py migrate
 
-mkdir /data/logs
 celery -A lexpredict_openedgar.taskapp worker --loglevel=INFO > /data/logs/celery.log  2>&1 &
 
 python manage.py shell < run_edgar.py
