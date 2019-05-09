@@ -21,7 +21,8 @@ rabbitmqctl set_permissions -p openedgar openedgar ".*" ".*" ".*"
 # perform initial migration
 python manage.py migrate
 
-celery -A lexpredict_openedgar.taskapp worker --loglevel=WARNING£# -f ./celery.log -c16 &
+mkfifo celery.log
+celery -A lexpredict_openedgar.taskapp worker --loglevel=WARNING  2> celery.log &
 
 cd /opt/openedgar/tika
 
