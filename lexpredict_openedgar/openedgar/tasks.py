@@ -26,9 +26,11 @@ SOFTWARE.
 import datetime
 import hashlib
 import logging
+import sys
 import tempfile
 import os
 import pathlib
+import traceback
 from typing import Iterable, Union
 
 # Packages
@@ -70,24 +72,9 @@ def create_filing_documents(client, documents, filing, store_raw: bool = True, s
     """
     # Get client if we're using S3
 
-
     # Iterate through documents
     document_records = []
     for document in documents:
-        # Create DB object
-        filing_doc = FilingDocument()
-        filing_doc.filing = filing
-        filing_doc.type = document["type"]
-        filing_doc.sequence = document["sequence"]
-        filing_doc.file_name = document["file_name"]
-        filing_doc.content_type = document["content_type"]
-        filing_doc.description = document["description"]
-        filing_doc.sha1 = document["sha1"]
-        filing_doc.start_pos = document["start_pos"]
-        filing_doc.end_pos = document["end_pos"]
-        filing_doc.is_processed = True
-        filing_doc.is_error = len(document["content"]) > 0
-        document_records.append(filing_doc)
 
         # Upload raw if requested
         if store_raw and len(document["content"]) > 0:
@@ -110,6 +97,20 @@ def create_filing_documents(client, documents, filing, store_raw: bool = True, s
             else:
                 logger.info("Text contents for filing={0}, sequence={1}, sha1={2} already exists on S3"
                             .format(filing, document["sequence"], document["sha1"]))
+        # Create DB object
+        filing_doc = FilingDocument()
+        filing_doc.filing = filing
+        filing_doc.type = document["type"]
+        filing_doc.sequence = document["sequence"]
+        filing_doc.file_name = document["file_name"]
+        filing_doc.content_type = document["content_type"]
+        filing_doc.description = document["description"]
+        filing_doc.sha1 = document["sha1"]
+        filing_doc.start_pos = document["start_pos"]
+        filing_doc.end_pos = document["end_pos"]
+        filing_doc.is_processed = True
+        filing_doc.is_error = len(document["content"]) > 0
+        document_records.append(filing_doc)
 
     # Create in bulk
     FilingDocument.objects.bulk_create(document_records)
@@ -240,10 +241,10 @@ def process_filing_index(client_type: str, file_path: str, filing_index_buffer: 
             logger.info("Filing record already exists: {0}".format(filing))
         except Filing.MultipleObjectsReturned as e:
             # Create new filing record
-            logger.error("Multiple Filing records found for s3_path={0}, skipping...".format(filing_path))
-            filing=Filing.objects.filter(s3_path=filing_path).first()
-            logger.warning("Getting the first one: {0}".format(filing))
-            logger.warning("Raw exception: {0}".format(e))
+            logger.warning("Multiple Filing records found for s3_path={0} .. Taking first one!".format(filing_path))
+            filing = Filing.objects.filter(s3_path=filing_path).first()
+            logger.info("Filing record already exists: {0}".format(filing))
+            logger.debug("Raw exception: {0}".format(e))
         except Filing.DoesNotExist as f:
             # Create new filing record
             logger.info("No Filing record found for {0}, creating...".format(filing_path))
@@ -270,7 +271,8 @@ def process_filing_index(client_type: str, file_path: str, filing_index_buffer: 
                 filing_buffer = client.get_buffer(filing_path)
 
             # Parse
-            filing_result = process_filing(client, filing_path, filing_buffer, store_raw=store_raw, store_text=store_text)
+            filing_result = process_filing(client, filing_path, filing_buffer, store_raw=store_raw,
+                                           store_text=store_text)
             if filing_result is None:
                 logger.error("Unable to process filing.")
                 bad_record_count += 1
@@ -316,7 +318,6 @@ def process_filing(client, file_path: str, filing_buffer: Union[str, bytes] = No
     # Log entry
     logger.info("Processing filing {0}...".format(file_path))
 
-
     # Check for existing record first
     try:
         filing = Filing.objects.get(s3_path=file_path)
@@ -333,6 +334,10 @@ def process_filing(client, file_path: str, filing_buffer: Union[str, bytes] = No
     if filing_buffer is None:
         logger.info("Retrieving filing buffer from S3...")
         filing_buffer = client.get_buffer(file_path)
+        filing_buffer = openedgar.parsers.edgar.decode_filing(filing_buffer)
+        if filing_buffer is None:
+            logger.error("Unable to read the filing {}".format(file_path))
+            return None
 
     # Get main filing data structure
     filing_data = openedgar.parsers.edgar.parse_filing(filing_buffer, extract=store_text)
@@ -416,7 +421,12 @@ def process_filing(client, file_path: str, filing_buffer: Union[str, bytes] = No
         filing.save()
         return filing
     except Exception as e:  # pylint: disable=broad-except
-        logger.error("Unable to create filing documents for {0}: {1}".format(filing, e))
+        logger.error("423: Unable to create filing documents for {0}: {1}qGG".format(filing, e))
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        ex_txt = ""
+        for line in traceback.TracebackException(type(exc_type), exc_value, exc_tb).format(chain=None):
+            ex_txt += line + "\n"
+        logger.error(ex_txt)
         return None
 
 
@@ -429,8 +439,6 @@ def extract_filing(client, file_path: str, filing_buffer: Union[str, bytes] = No
     :return:
     """
     # Get buffer
-
-
 
     if filing_buffer is None:
         logger.info("Retrieving filing buffer from S3...")
