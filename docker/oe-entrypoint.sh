@@ -21,7 +21,7 @@ rabbitmqctl set_permissions -p openedgar openedgar ".*" ".*" ".*"
 
 cd /opt/openedgar/tika
 
-java -jar tika-server-1.20.jar > /data/logs/tika.log   2>&1 &
+java -jar tika-server-1.21.jar > /data/logs/tika.log   2>&1 &
 
 cd /opt/openedgar/lexpredict_openedgar
 

@@ -1,1 +1,2 @@
-wget http://www-us.apache.org/dist/tika/tika-server-1.20.jar
+#!/bin/bash
+wget http://www-us.apache.org/dist/tika/tika-server-1.21.jar
