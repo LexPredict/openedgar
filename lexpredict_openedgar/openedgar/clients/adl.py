@@ -1,5 +1,6 @@
 # Libraries
 import logging
+import os
 from typing import Union
 import adal
 
@@ -15,21 +16,22 @@ formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
 console.setFormatter(formatter)
 logger.addHandler(console)
 
-authority_host_uri = 'https://login.microsoftonline.com'
-authority_uri = authority_host_uri + '/' + ADL_TENANT
-RESOURCE = 'https://management.core.windows.net/'
+if os.environ["CLIENT_TYPE"] == "ADL":
+    authority_host_uri = 'https://login.microsoftonline.com'
+    authority_uri = authority_host_uri + '/' + ADL_TENANT
+    RESOURCE = 'https://management.core.windows.net/'
 
-adlCreds = lib.auth(tenant_id=ADL_TENANT,
-                    client_secret=ADL_SECRET,
-                    client_id=ADL_CID,
-                    resource=RESOURCE)
+    adlCreds = lib.auth(tenant_id=ADL_TENANT,
+                        client_secret=ADL_SECRET,
+                        client_id=ADL_CID,
+                        resource=RESOURCE)
 
-context = adal.AuthenticationContext(authority_uri, api_version=None)
-mgmt_token = context.acquire_token_with_client_credentials(RESOURCE, ADL_CID, ADL_SECRET)
-armCreds = AADTokenCredentials(mgmt_token, ADL_CID, resource=RESOURCE)
+    context = adal.AuthenticationContext(authority_uri, api_version=None)
+    mgmt_token = context.acquire_token_with_client_credentials(RESOURCE, ADL_CID, ADL_SECRET)
+    armCreds = AADTokenCredentials(mgmt_token, ADL_CID, resource=RESOURCE)
 
-## Create a filesystem client object
-adlsFileSystemClient = core.AzureDLFileSystem(adlCreds, store_name=ADL_ACCOUNT)
+    ## Create a filesystem client object
+    adlsFileSystemClient = core.AzureDLFileSystem(adlCreds, store_name=ADL_ACCOUNT)
 
 
 class ADLClient:
