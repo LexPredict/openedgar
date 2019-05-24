@@ -43,8 +43,7 @@ class BlobClient:
         """
         if remote_path[0] == '/':
             remote_path = remote_path[1:]
-        if not self.path_exists(remote_path):
-            return blob_service.get_blob_to_bytes(BLOB_CONTAINER, remote_path).content
+        return blob_service.get_blob_to_bytes(BLOB_CONTAINER, remote_path).content
 
     def get_file(self, remote_path: str, local_path: str, client=None, deflate: bool = True):
         """

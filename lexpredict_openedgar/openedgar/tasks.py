@@ -235,6 +235,9 @@ def process_filing_index(client_type: str, file_path: str, filing_index_buffer: 
     if filing_index_buffer is None:
         logger.info("Retrieving filing index buffer for: {}...".format(file_path))
         filing_index_buffer = client.get_buffer(file_path)
+    if filing_index_buffer is None:
+        logger.error("SOMETHING WRONG! FILING IS NONE! Client {} file {}".format(client_type, file_path))
+        raise ValueError("Filing index is none!")
 
     # Write to disk to handle headaches
     temp_file = tempfile.NamedTemporaryFile(delete=False)
