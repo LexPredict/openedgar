@@ -41,6 +41,7 @@ from celery import shared_task
 # Project
 from config.settings.base import S3_DOCUMENT_PATH, DOWNLOAD_PATH
 from openedgar.clients.adl import ADLClient
+from openedgar.clients.blob import BlobClient
 from openedgar.clients.s3 import S3Client
 from openedgar.clients.local import LocalClient
 import openedgar.clients.edgar
@@ -225,6 +226,8 @@ def process_filing_index(client_type: str, file_path: str, filing_index_buffer: 
         client = S3Client()
     elif client_type == "ADL":
         client = ADLClient()
+    elif client_type == "Blob":
+        client = BlobClient()
     else:
         client = LocalClient()
 

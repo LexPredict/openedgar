@@ -23,18 +23,13 @@ WORKDIR /opt/openedgar/
 RUN virtualenv -p /usr/bin/python3 env
 COPY lexpredict_openedgar/requirements/full.txt lexpredict_openedgar/requirements/full.txt
 RUN ./env/bin/pip install -r lexpredict_openedgar/requirements/full.txt
-RUN ./env/bin/pip install azure-mgmt-resource azure-mgmt-datalake-store azure-datalake-store
+RUN ./env/bin/pip install azure-mgmt-resource azure-mgmt-datalake-store azure-datalake-store azure-storage-blob
 COPY tika/tika-server-1.21.jar /opt/openedgar/tika/tika-server-1.21.jar
 COPY lexpredict_openedgar/ /opt/openedgar/lexpredict_openedgar/
 
 COPY docker/default.env /opt/openedgar/
 RUN cp lexpredict_openedgar/sample.env lexpredict_openedgar/.env
 #COPY docker/erlang-solutions_1.0_all.deb lexpredict_openedgar/erlang-solutions_1.0_all.deb
-#COPY tasks.py lexpredict_openedgar/openedgar/tasks.py
-#COPY edgar.py lexpredict_openedgar/openedgar/processes/edgar.py
-#COPY parsers/edgar.py lexpredict_openedgar/openedgar/parsers/edgar.py
-#COPY clients/adl.py lexpredict_openedgar/openedgar/clients/adl.py
-#COPY clients/edgar.py lexpredict_openedgar/openedgar/clients/edgar.py
 COPY docker/oe-entrypoint.sh /usr/local/bin/
 COPY docker/run_edgar.py /opt/openedgar/lexpredict_openedgar/run_edgar.py
 COPY docker/dot_env.sh /opt/openedgar

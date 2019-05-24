@@ -30,6 +30,7 @@ import os
 import openedgar.clients.edgar
 from config.settings.base import DOWNLOAD_PATH
 from openedgar.clients.adl import ADLClient
+from openedgar.clients.blob import BlobClient
 from openedgar.clients.s3 import S3Client
 from openedgar.clients.local import LocalClient
 import openedgar.clients.local
@@ -76,6 +77,8 @@ def download_filing_index_data(year: int = None, quarter: int = None, month: int
         download_client = S3Client()
     elif configured_client == "ADL":
         download_client = ADLClient()
+    elif configured_client == "Blob":
+        download_client = BlobClient()
     else:
         download_client = LocalClient()
     path_prefix = DOWNLOAD_PATH

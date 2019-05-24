@@ -346,3 +346,7 @@ ADL_TENANT = env('ADL_TENANT', default="")
 ADL_CID = env('ADL_CID', default="")
 # Client secret/password
 ADL_SECRET = env('ADL_SECRET', default="")
+
+# Azure Blob Storage
+BLOB_CONNECTION_STRING = env('BLOB_CONNECTION_STRING', default="")
+BLOB_CONTAINER = env("BLOB_CONTAINER", default="openedgar")
