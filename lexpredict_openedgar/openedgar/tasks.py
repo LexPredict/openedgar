@@ -56,12 +56,6 @@ import lexnlp.nlp.en.tokens
 from openedgar.process_text import html_to_text
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-console = logging.StreamHandler()
-console.setLevel(logging.INFO)
-formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
-console.setFormatter(formatter)
-logger.addHandler(console)
 
 
 def create_filing_documents(client, documents, filing, store_raw: bool = True, store_text: bool = True,

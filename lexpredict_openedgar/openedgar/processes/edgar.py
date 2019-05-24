@@ -40,12 +40,6 @@ from openedgar.tasks import process_filing_index, search_filing_document_sha1
 
 # Logging setup
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-console = logging.StreamHandler()
-console.setLevel(logging.INFO)
-formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
-console.setFormatter(formatter)
-logger.addHandler(console)
 
 
 def download_filing_index_data(year: int = None, quarter: int = None, month: int = None):

@@ -39,13 +39,6 @@ from config.settings.base import HTTP_SEC_HOST, HTTP_FAIL_SLEEP, HTTP_SEC_INDEX_
 
 # Setup logger
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-console = logging.StreamHandler()
-console.setLevel(logging.INFO)
-formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
-console.setFormatter(formatter)
-logger.addHandler(console)
-
 
 def get_buffer(remote_path: str, base_path: str = HTTP_SEC_HOST):
     """

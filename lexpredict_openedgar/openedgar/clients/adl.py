@@ -9,12 +9,6 @@ from azure.datalake.store import core, lib, multithread
 from config.settings.base import ADL_ACCOUNT, ADL_TENANT, ADL_CID, ADL_SECRET
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-console = logging.StreamHandler()
-console.setLevel(logging.INFO)
-formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
-console.setFormatter(formatter)
-logger.addHandler(console)
 
 if os.environ["CLIENT_TYPE"] == "ADL":
     authority_host_uri = 'https://login.microsoftonline.com'
@@ -35,7 +29,9 @@ if os.environ["CLIENT_TYPE"] == "ADL":
 
 
 class ADLClient:
-
+    """
+    TODO: This class does not support the deflate option
+    """
     def __init__(self):
         logger.info("Initialized AKS client")
 

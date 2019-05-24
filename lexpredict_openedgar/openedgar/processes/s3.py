@@ -31,12 +31,6 @@ import openedgar.clients.s3
 
 # Setup logger
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-console = logging.StreamHandler()
-console.setLevel(logging.INFO)
-formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
-console.setFormatter(formatter)
-logger.addHandler(console)
 
 
 def is_access_denied_file(remote_path: str, client=None):
