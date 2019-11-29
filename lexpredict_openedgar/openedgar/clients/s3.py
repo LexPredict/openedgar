@@ -38,12 +38,6 @@ from config.settings.base import S3_ACCESS_KEY, S3_BUCKET, S3_COMPRESSION_LEVEL,
 
 # Setup logger
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-console = logging.StreamHandler()
-console.setLevel(logging.INFO)
-formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
-console.setFormatter(formatter)
-logger.addHandler(console)
 
 
 class S3Client:

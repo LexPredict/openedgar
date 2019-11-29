@@ -28,6 +28,9 @@ import logging
 import os
 # Project
 import openedgar.clients.edgar
+from config.settings.base import DOWNLOAD_PATH
+from openedgar.clients.adl import ADLClient
+from openedgar.clients.blob import BlobClient
 from openedgar.clients.s3 import S3Client
 from openedgar.clients.local import LocalClient
 import openedgar.clients.local
@@ -37,37 +40,42 @@ from openedgar.tasks import process_filing_index, search_filing_document_sha1
 
 # Logging setup
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.ERROR)
-console = logging.StreamHandler()
-console.setLevel(logging.ERROR)
-formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
-console.setFormatter(formatter)
-logger.addHandler(console)
 
 
-def download_filing_index_data(year: int = None):
+def download_filing_index_data(year: int = None, quarter: int = None, month: int = None):
     """
     Download all filing index data.
+    :param month:
+    :param quarter:
     :param year:
     :return:
     """
     # Get filing index list
     if year is not None:
-        filing_index_list = openedgar.clients.edgar.list_index_by_year(year)
+        if month is not None:
+            filing_index_list = openedgar.clients.edgar.list_index_by_month(year, month)
+        elif quarter is not None:
+            filing_index_list = openedgar.clients.edgar.list_index_by_quarter(year, quarter)
+        else:
+            filing_index_list = openedgar.clients.edgar.list_index_by_year(year)
     else:
         filing_index_list = openedgar.clients.edgar.list_index()
 
     path_list = []
     configured_client = os.environ["CLIENT_TYPE"]
-    logger.info(msg="Configured client is: {}".format(configured_client))
+    logger.info("Configured client is: {}".format(configured_client))
     path_prefix = str()
 
     if configured_client is None or configured_client == "S3":
         # Create S3 client
         download_client = S3Client()
+    elif configured_client == "ADL":
+        download_client = ADLClient()
+    elif configured_client == "Blob":
+        download_client = BlobClient()
     else:
         download_client = LocalClient()
-        path_prefix = os.environ["DOWNLOAD_PATH"]
+    path_prefix = DOWNLOAD_PATH
 
     # Now iterate through list to check if already on S3
     for filing_index_path in filing_index_list:
@@ -81,10 +89,10 @@ def download_filing_index_data(year: int = None):
         try:
             filing_index = FilingIndex.objects.get(edgar_url=filing_index_path)
             is_processed = filing_index.is_processed
-            logger.info("Index {0} already exists in DB.".format(filing_index_path))
+            logger.debug("Index {0} already exists in DB.".format(filing_index_path))
         except FilingIndex.DoesNotExist:
             is_processed = False
-            logger.info("Index {0} does not exist in DB.".format(filing_index_path))
+            logger.debug("Index {0} does not exist in DB.".format(filing_index_path))
 
         # Check if exists; download and upload to S3 if missing
         if not download_client.path_exists(file_path):
@@ -94,19 +102,19 @@ def download_filing_index_data(year: int = None):
             # Upload
             download_client.put_buffer(file_path, buffer)
 
-            logger.info("Retrieved {0} and uploaded to S3.".format(filing_index_path))
+            logger.debug("Retrieved {0} and uploaded to S3.".format(filing_index_path))
             path_list.append((file_path, True, is_processed))
         else:
-            logger.info("Index {0} already exists on S3.".format(filing_index_path))
+            logger.debug("Index {0} already exists on S3.".format(filing_index_path))
             path_list.append((file_path, False, is_processed))
 
     # Return list of updates
     return path_list
 
 
-def process_all_filing_index(year: int = None, form_type_list: Iterable[str] = None, new_only: bool = False,
-                             store_raw: bool = True,
-                             store_text: bool = True):
+def process_all_filing_index(year: int = None, quarter: int = None, month: int = None,
+                             form_type_list: Iterable[str] = None, new_only: bool = False,
+                             store_raw: bool = True, store_text: bool = True, store_processed: bool = True):
     """
     Process all filing index data.
     :type year: optional year to process
@@ -114,10 +122,11 @@ def process_all_filing_index(year: int = None, form_type_list: Iterable[str] = N
     :param new_only:
     :param store_raw:
     :param store_text:
+    :param store_processed:
     :return:
     """
     # Get the list of file paths
-    file_path_list = download_filing_index_data(year)
+    file_path_list = download_filing_index_data(year, quarter, month)
 
     client_type = os.environ["CLIENT_TYPE"] or "S3"
 
@@ -127,11 +136,11 @@ def process_all_filing_index(year: int = None, form_type_list: Iterable[str] = N
         if new_only and not is_processed:
             logger.info("Processing filing index for {0}...".format(s3_path))
             _ = process_filing_index.delay(client_type, s3_path, form_type_list=form_type_list, store_raw=store_raw,
-                                           store_text=store_text)
+                                           store_text=store_text, store_processed=store_processed)
         elif not new_only:
             logger.info("Processing filing index for {0}...".format(s3_path))
             _ = process_filing_index.delay(client_type, s3_path, form_type_list=form_type_list, store_raw=store_raw,
-                                           store_text=store_text)
+                                           store_text=store_text, store_processed=store_processed)
         else:
             logger.info("Skipping process_filing_index for {0}...".format(s3_path))
 
@@ -179,7 +188,7 @@ def search_filing_documents(term_list: Iterable[str], form_type_list: Iterable[s
                                           stem_search=stem_search)
         n += 1
 
-    logger.info("Searching {0} documents for {1} terms...".format(n, len(term_list)))
+    logger.debug("Searching {0} documents for {1} terms...".format(n, len(term_list)))
 
 
 def export_filing_document_search(search_query_id: int, output_file_path: str):

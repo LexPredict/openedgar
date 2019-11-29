@@ -332,8 +332,21 @@ S3_BUCKET = env('S3_BUCKET', default="")
 S3_DOCUMENT_PATH = env('S3_DOCUMENT_PATH', default="openedgar")
 S3_PREFIX = env('S3_PREFIX', default="documents")
 S3_COMPRESSION_LEVEL = int(env('S3_COMPRESSION_LEVEL', default=6))
+DOWNLOAD_PATH = env('DOWNLOAD_PATH', default='openedgar')
 
 # Tika configuration
 TIKA_HOST = "localhost"
 TIKA_PORT = 9998
 TIKA_ENDPOINT = "http://{0}:{1}/tika".format(TIKA_HOST, TIKA_PORT)
+
+# Azure data Lake
+ADL_ACCOUNT = env('ADL_ACCOUNT', default="")
+ADL_TENANT = env('ADL_TENANT', default="")
+# Client ID
+ADL_CID = env('ADL_CID', default="")
+# Client secret/password
+ADL_SECRET = env('ADL_SECRET', default="")
+
+# Azure Blob Storage
+BLOB_CONNECTION_STRING = env('BLOB_CONNECTION_STRING', default="")
+BLOB_CONTAINER = env("BLOB_CONTAINER", default="openedgar")

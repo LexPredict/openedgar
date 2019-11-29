@@ -135,4 +135,5 @@ Werkzeug==0.14.1
 whitenoise==3.3.1
 widgetsnbextension==3.2.1
 wrapt==1.10.11
+beautifulsoup4==4.7.1
 https://github.com/LexPredict/lexpredict-lexnlp/archive/0.1.8.zip

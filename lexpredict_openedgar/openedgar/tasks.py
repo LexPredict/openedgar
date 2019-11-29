@@ -26,9 +26,11 @@ SOFTWARE.
 import datetime
 import hashlib
 import logging
+import sys
 import tempfile
 import os
 import pathlib
+import traceback
 from typing import Iterable, Union
 
 # Packages
@@ -37,7 +39,9 @@ import django.db.utils
 from celery import shared_task
 
 # Project
-from config.settings.base import S3_DOCUMENT_PATH
+from config.settings.base import S3_DOCUMENT_PATH, DOWNLOAD_PATH
+from openedgar.clients.adl import ADLClient
+from openedgar.clients.blob import BlobClient
 from openedgar.clients.s3 import S3Client
 from openedgar.clients.local import LocalClient
 import openedgar.clients.edgar
@@ -49,16 +53,13 @@ from openedgar.models import Filing, CompanyInfo, Company, FilingDocument, Searc
 import lexnlp.nlp.en.tokens
 
 # Logging setup
+from openedgar.process_text import html_to_text
+
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-console = logging.StreamHandler()
-console.setLevel(logging.INFO)
-formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
-console.setFormatter(formatter)
-logger.addHandler(console)
 
 
-def create_filing_documents(client, documents, filing, store_raw: bool = True, store_text: bool = True):
+def create_filing_documents(client, documents, filing, store_raw: bool = True, store_text: bool = True,
+                            store_processed=True):
     """
     Create filing document records given a list of documents
     and a filing record.
@@ -66,28 +67,14 @@ def create_filing_documents(client, documents, filing, store_raw: bool = True, s
     :param filing: Filing record
     :param store_raw: whether to store raw contents
     :param store_text: whether to store text contents
+    :param store_processed: whether to extract the text from the contents
     :return:
     """
     # Get client if we're using S3
 
-
     # Iterate through documents
     document_records = []
     for document in documents:
-        # Create DB object
-        filing_doc = FilingDocument()
-        filing_doc.filing = filing
-        filing_doc.type = document["type"]
-        filing_doc.sequence = document["sequence"]
-        filing_doc.file_name = document["file_name"]
-        filing_doc.content_type = document["content_type"]
-        filing_doc.description = document["description"]
-        filing_doc.sha1 = document["sha1"]
-        filing_doc.start_pos = document["start_pos"]
-        filing_doc.end_pos = document["end_pos"]
-        filing_doc.is_processed = True
-        filing_doc.is_error = len(document["content"]) > 0
-        document_records.append(filing_doc)
 
         # Upload raw if requested
         if store_raw and len(document["content"]) > 0:
@@ -110,6 +97,32 @@ def create_filing_documents(client, documents, filing, store_raw: bool = True, s
             else:
                 logger.info("Text contents for filing={0}, sequence={1}, sha1={2} already exists on S3"
                             .format(filing, document["sequence"], document["sha1"]))
+
+        if store_processed and document["content_text"] is not None:
+            text_path = pathlib.Path(S3_DOCUMENT_PATH, "processed", document["sha1"]).as_posix()
+            if not client.path_exists(text_path):
+                text = html_to_text(document["content_text"])
+                client.put_buffer(text_path, text, write_bytes=False)
+                logger.info("Processed text contents for filing={0}, sequence={1}, sha1={2}"
+                            .format(filing, document["sequence"], document["sha1"]))
+            else:
+                logger.info("Processed text contents for filing={0}, sequence={1}, sha1={2} already exists"
+                            .format(filing, document["sequence"], document["sha1"]))
+
+        # Create DB object
+        filing_doc = FilingDocument()
+        filing_doc.filing = filing
+        filing_doc.type = document["type"]
+        filing_doc.sequence = document["sequence"]
+        filing_doc.file_name = document["file_name"]
+        filing_doc.content_type = document["content_type"]
+        filing_doc.description = document["description"]
+        filing_doc.sha1 = document["sha1"]
+        filing_doc.start_pos = document["start_pos"]
+        filing_doc.end_pos = document["end_pos"]
+        filing_doc.is_processed = True
+        filing_doc.is_error = len(document["content"]) > 0
+        document_records.append(filing_doc)
 
     # Create in bulk
     FilingDocument.objects.bulk_create(document_records)
@@ -187,14 +200,17 @@ def create_filing_error(row, filing_path: str):
 
 @shared_task
 def process_filing_index(client_type: str, file_path: str, filing_index_buffer: Union[str, bytes] = None,
-                         form_type_list: Iterable[str] = None, store_raw: bool = False, store_text: bool = False):
+                         form_type_list: Iterable[str] = None, store_raw: bool = False, store_text: bool = False,
+                         store_processed: bool = False):
     """
     Process a filing index from an S3 path or buffer.
+    :param client_type:
     :param file_path: S3 or local path to process; if filing_index_buffer is none, retrieved from here
     :param filing_index_buffer: buffer; if not present, s3_path must be set
     :param form_type_list: optional list of form type to process
     :param store_raw:
     :param store_text:
+    :param store_processed:
     :return:
     """
     # Log entry
@@ -202,6 +218,10 @@ def process_filing_index(client_type: str, file_path: str, filing_index_buffer: 
 
     if client_type == "S3":
         client = S3Client()
+    elif client_type == "ADL":
+        client = ADLClient()
+    elif client_type == "Blob":
+        client = BlobClient()
     else:
         client = LocalClient()
 
@@ -209,6 +229,9 @@ def process_filing_index(client_type: str, file_path: str, filing_index_buffer: 
     if filing_index_buffer is None:
         logger.info("Retrieving filing index buffer for: {}...".format(file_path))
         filing_index_buffer = client.get_buffer(file_path)
+    if filing_index_buffer is None:
+        logger.error("SOMETHING WRONG! FILING IS NONE! Client {} file {}".format(client_type, file_path))
+        raise ValueError("Filing index is none!")
 
     # Write to disk to handle headaches
     temp_file = tempfile.NamedTemporaryFile(delete=False)
@@ -217,7 +240,7 @@ def process_filing_index(client_type: str, file_path: str, filing_index_buffer: 
 
     # Get main filing data structure
     filing_index_data = openedgar.parsers.edgar.parse_index_file(temp_file.name)
-    logger.info("Parsed {0} records from index".format(filing_index_data.shape[0]))
+    logger.warning("Parsed {0} records from index".format(filing_index_data.shape[0]))
 
     # Iterate through rows
     bad_record_count = 0
@@ -240,9 +263,10 @@ def process_filing_index(client_type: str, file_path: str, filing_index_buffer: 
             logger.info("Filing record already exists: {0}".format(filing))
         except Filing.MultipleObjectsReturned as e:
             # Create new filing record
-            logger.error("Multiple Filing records found for s3_path={0}, skipping...".format(filing_path))
-            logger.info("Raw exception: {0}".format(e))
-            continue
+            logger.warning("Multiple Filing records found for s3_path={0} .. Taking first one!".format(filing_path))
+            filing = Filing.objects.filter(s3_path=filing_path).first()
+            logger.info("Filing record already exists: {0}".format(filing))
+            logger.debug("Raw exception: {0}".format(e))
         except Filing.DoesNotExist as f:
             # Create new filing record
             logger.info("No Filing record found for {0}, creating...".format(filing_path))
@@ -260,7 +284,7 @@ def process_filing_index(client_type: str, file_path: str, filing_index_buffer: 
                     continue
 
                 # Upload
-                client.put_buffer(filing_path, filing_buffer)
+                client.put_buffer("{}/{}".format(DOWNLOAD_PATH,filing_path), filing_buffer)
 
                 logger.info("Downloaded from EDGAR and uploaded to {}...".format(client_type))
             else:
@@ -269,7 +293,8 @@ def process_filing_index(client_type: str, file_path: str, filing_index_buffer: 
                 filing_buffer = client.get_buffer(filing_path)
 
             # Parse
-            filing_result = process_filing(client, filing_path, filing_buffer, store_raw=store_raw, store_text=store_text)
+            filing_result = process_filing(client, filing_path, filing_buffer, store_raw=store_raw,
+                                           store_text=store_text, store_processed=store_processed)
             if filing_result is None:
                 logger.error("Unable to process filing.")
                 bad_record_count += 1
@@ -303,18 +328,18 @@ def process_filing_index(client_type: str, file_path: str, filing_index_buffer: 
 
 @shared_task
 def process_filing(client, file_path: str, filing_buffer: Union[str, bytes] = None, store_raw: bool = False,
-                   store_text: bool = False):
+                   store_text: bool = False, store_processed: bool = False):
     """
     Process a filing from a path or filing buffer.
     :param file_path: path to process; if filing_buffer is none, retrieved from here
     :param filing_buffer: buffer; if not present, s3_path must be set
     :param store_raw:
     :param store_text:
+    :param store_processed
     :return:
     """
     # Log entry
     logger.info("Processing filing {0}...".format(file_path))
-
 
     # Check for existing record first
     try:
@@ -332,6 +357,10 @@ def process_filing(client, file_path: str, filing_buffer: Union[str, bytes] = No
     if filing_buffer is None:
         logger.info("Retrieving filing buffer from S3...")
         filing_buffer = client.get_buffer(file_path)
+        filing_buffer = openedgar.parsers.edgar.decode_filing(filing_buffer)
+        if filing_buffer is None:
+            logger.error("Unable to read the filing {}".format(file_path))
+            return None
 
     # Get main filing data structure
     filing_data = openedgar.parsers.edgar.parse_filing(filing_buffer, extract=store_text)
@@ -409,13 +438,19 @@ def process_filing(client, file_path: str, filing_buffer: Union[str, bytes] = No
 
     # Create filing document records
     try:
-        create_filing_documents(client, filing_data["documents"], filing, store_raw=store_raw, store_text=store_text)
+        create_filing_documents(client, filing_data["documents"], filing, store_raw=store_raw, store_text=store_text,
+                                store_processed=store_processed)
         filing.is_processed = True
         filing.is_error = False
         filing.save()
         return filing
     except Exception as e:  # pylint: disable=broad-except
-        logger.error("Unable to create filing documents for {0}: {1}".format(filing, e))
+        logger.error("423: Unable to create filing documents for {0}: {1}qGG".format(filing, e))
+        exc_type, exc_value, exc_tb = sys.exc_info()
+        ex_txt = ""
+        for line in traceback.TracebackException(type(exc_type), exc_value, exc_tb).format(chain=None):
+            ex_txt += line + "\n"
+        logger.error(ex_txt)
         return None
 
 
@@ -428,8 +463,6 @@ def extract_filing(client, file_path: str, filing_buffer: Union[str, bytes] = No
     :return:
     """
     # Get buffer
-
-
 
     if filing_buffer is None:
         logger.info("Retrieving filing buffer from S3...")

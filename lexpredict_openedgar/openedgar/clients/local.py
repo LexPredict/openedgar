@@ -26,12 +26,6 @@ import os
 
 # Setup logger
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-console = logging.StreamHandler()
-console.setLevel(logging.INFO)
-formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
-console.setFormatter(formatter)
-logger.addHandler(console)
 
 
 class LocalClient:
@@ -47,10 +41,12 @@ class LocalClient:
         if not os.path.exists(dir_name):
             os.makedirs(dir_name)
         if write_bytes:
-            mode="wb"
+            mode = "wb"
+            encoding = None
         else:
-            mode="w"
-        with open(file_path, mode=mode) as localfile:
+            mode = "w"
+            encoding = "utf-8"
+        with open(file_path, mode=mode, encoding=encoding) as localfile:
             localfile.write(buffer)
 
     def get_buffer(self, file_path: str):
