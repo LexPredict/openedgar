@@ -135,4 +135,8 @@ Werkzeug==0.14.1
 whitenoise==3.3.1
 widgetsnbextension==3.2.1
 wrapt==1.10.11
+gunicorn==20.0.4
+django-storages==1.9.1
+django-anymail==8.1
+dj-database-url==0.5.0
 https://github.com/LexPredict/lexpredict-lexnlp/archive/0.1.9.zip

@@ -1,8 +1,10 @@
 FROM python:3.6
 
+RUN apt-get update && apt-get install -y postgresql-client-common libpq-dev
+
 RUN pip install --upgrade pip
 
-ENV OPENEDGAR_DIR /opt/openedgar
+ENV OPENEDGAR_DIR /opt/openedgar/lexpredict_openedgar
 RUN mkdir -p ${OPENEDGAR_DIR}
 WORKDIR ${OPENEDGAR_DIR}
 

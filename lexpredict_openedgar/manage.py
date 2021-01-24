@@ -26,4 +26,15 @@ if __name__ == '__main__':
     current_path = os.path.dirname(os.path.abspath(__file__))
     sys.path.append(os.path.join(current_path, 'lexpredict_openedgar'))
 
+    from django.db import connection
+    if 'openedgar_company' not in connection.introspection.table_names():
+        execute_from_command_line(['manage.py', 'migrate'])
+
+    from openedgar.clients.s3 import S3Client
+    s3 = S3Client()
+    try:
+        s3.get_bucket().create()
+    except:
+        pass
+
     execute_from_command_line(sys.argv)
