@@ -73,7 +73,6 @@ services:
 
   rabbitmq:
     image: rabbitmq:3-management-alpine
-    container_name: rabbitmq
     volumes:
       - rabbitmq-etc:/etc/rabbitmq/
       - rabbitmq-data:/var/lib/rabbitmq/
