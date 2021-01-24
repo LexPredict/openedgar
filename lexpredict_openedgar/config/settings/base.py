@@ -31,10 +31,10 @@ https://docs.djangoproject.com/en/dev/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/dev/ref/settings/
 """
+
+
 import pathlib
-
 import environ
-
 ROOT_DIR = environ.Path(
     __file__) - 3  # (lexpredict_openedgar/config/settings/base.py - 3 = lexpredict_openedgar/)
 APPS_DIR = ROOT_DIR.path('lexpredict_openedgar')
@@ -294,7 +294,7 @@ LOGIN_URL = 'account_login'
 # SLUGLIFIER
 AUTOSLUG_SLUGIFY_FUNCTION = 'slugify.slugify'
 
-########## CELERY
+# CELERY
 INSTALLED_APPS += ['lexpredict_openedgar.taskapp.celery.CeleryConfig']
 CELERY_BROKER_URL = env('CELERY_BROKER_URL', default='django://')
 CELERY_RESULT_BACKEND = 'rpc'
@@ -304,7 +304,7 @@ CELERY_RESULT_PERSISTENT = False
 #: from unwanted access (see userguide/security.html)
 CELERY_ACCEPT_CONTENT = ['pickle']
 CELERY_TASK_SERIALIZER = 'pickle'
-########## END CELERY
+# END CELERY
 
 
 # Location of root django.contrib.admin URL, use {% url 'admin:index' %}
@@ -326,12 +326,13 @@ HTTP_FAIL_SLEEP = [15, 30, 60, 300]
 HTTP_SLEEP_DEFAULT = 0.0
 
 # S3 bucket configuration
-S3_ACCESS_KEY = env('S3_ACCESS_KEY', default="")
-S3_SECRET_KEY = env('S3_SECRET_KEY', default="")
+S3_ACCESS_KEY = env('AWS_ACCESS_KEY_ID', default=env('S3_ACCESS_KEY', default=""))
+S3_SECRET_KEY = env('AWS_SECRET_ACCESS_KEY', default=env('S3_SECRET_KEY', default=""))
 S3_BUCKET = env('S3_BUCKET', default="")
 S3_DOCUMENT_PATH = env('S3_DOCUMENT_PATH', default="openedgar")
 S3_PREFIX = env('S3_PREFIX', default="documents")
 S3_COMPRESSION_LEVEL = int(env('S3_COMPRESSION_LEVEL', default=6))
+S3_ENDPOINT = env('AWS_S3_ENDPOINT_URL', default="")
 
 # Tika configuration
 TIKA_HOST = "localhost"

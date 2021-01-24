@@ -34,7 +34,7 @@ import zlib
 
 from typing import Union
 
-from config.settings.base import S3_ACCESS_KEY, S3_BUCKET, S3_COMPRESSION_LEVEL, S3_SECRET_KEY
+from config.settings.base import S3_ACCESS_KEY, S3_BUCKET, S3_COMPRESSION_LEVEL, S3_SECRET_KEY, S3_ENDPOINT
 
 # Setup logger
 logger = logging.getLogger(__name__)
@@ -57,7 +57,8 @@ class S3Client:
         :return: returns boto3 S3 resource object
         """
         # Create S3 resource
-        s3 = boto3.resource('s3', aws_access_key_id=S3_ACCESS_KEY, aws_secret_access_key=S3_SECRET_KEY)
+        s3 = boto3.resource('s3', endpoint_url=S3_ENDPOINT, aws_access_key_id=S3_ACCESS_KEY,
+                            aws_secret_access_key=S3_SECRET_KEY)
         return s3
 
     def get_client(self):
@@ -66,7 +67,8 @@ class S3Client:
         :return: returns boto3 S3 client object
         """
         # Create S3 client
-        client = boto3.client('s3', aws_access_key_id=S3_ACCESS_KEY, aws_secret_access_key=S3_SECRET_KEY)
+        client = boto3.client('s3', aws_access_key_id=S3_ACCESS_KEY,
+                              aws_secret_access_key=S3_SECRET_KEY, endpoint_url=S3_ENDPOINT)
         return client
 
     def get_bucket(self):
@@ -75,7 +77,8 @@ class S3Client:
         :return: returns boto3 S3 bucket resource
         """
         # Get bucket
-        s3 = boto3.resource('s3', aws_access_key_id=S3_ACCESS_KEY, aws_secret_access_key=S3_SECRET_KEY)
+        s3 = boto3.resource('s3', aws_access_key_id=S3_ACCESS_KEY,
+                            aws_secret_access_key=S3_SECRET_KEY, endpoint_url=S3_ENDPOINT)
         bucket = s3.Bucket(S3_BUCKET)
         return bucket
 

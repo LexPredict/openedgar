@@ -31,6 +31,7 @@ Production settings for LexPredict Corporate Database project.
 - Use Redis for cache
 """
 
+import dj_database_url
 from .base import *  # noqa
 
 # SECRET CONFIGURATION
@@ -133,8 +134,8 @@ TEMPLATES[0]['OPTIONS']['loaders'] = [
 
 # Use the Heroku-style specification
 # Raises ImproperlyConfigured exception if DATABASE_URL not in os.environ
-DATABASES['default'] = env.db('DATABASE_URL')
-DATABASES['default']['CONN_MAX_AGE'] = env.int('CONN_MAX_AGE', default=60)
+# DATABASES['default'] = env.db('DATABASE_URL')
+DATABASES['default'] = dj_database_url.config(conn_max_age=600)
 DATABASES['default']['ATOMIC_REQUESTS'] = True
 
 # CACHING

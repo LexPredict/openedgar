@@ -1,0 +1,104 @@
+version: "3.8"
+
+services:
+  openedgar-base:
+    build: .
+    environment:
+      - DATABASE_URL=postgres://openedgar:openedgar@postgres:5432/openedgar
+      - CELERY_BROKER_URL=amqp://openedgar:openedgar@rabbitmq:5672/openedgar
+      - CELERY_RESULT_BACKEND=rpc
+      - CELERY_RESULT_PERSISTENT=False
+      - DJANGO_SECRET_KEY=DJANGO_SECRET_KEY
+      - DJANGO_SETTINGS_MODULE=config.settings.production
+      - DJANGO_AWS_ACCESS_KEY_ID=minio_access_key
+      - DJANGO_AWS_SECRET_ACCESS_KEY=minio_secret_key
+      - AWS_ACCESS_KEY_ID=minio_access_key
+      - AWS_SECRET_ACCESS_KEY=minio_secret_key
+      - DJANGO_AWS_STORAGE_BUCKET_NAME=django
+      - S3_BUCKET=openedgar
+      - AWS_S3_ENDPOINT_URL=http://s3:9000
+      - CLIENT_TYPE=S3
+      - DJANGO_MAILGUN_API_KEY=
+      - MAILGUN_SENDER_DOMAIN=
+      - DJANGO_ADMIN_URL=
+    volumes:
+      - .:/opt/openedgar
+
+  shell:
+    extends: openedgar-base
+    links:
+      - postgres
+      - tika
+      - rabbitmq
+      - s3
+    command: python manage.py shell
+
+  web:
+    extends: openedgar-base
+    links:
+      - postgres
+      - tika
+      - rabbitmq
+      - s3
+    ports:
+      - 8000:8000
+    command: python manage.py runserver 0:8000
+
+  worker:
+    extends: openedgar-base
+    environment:
+      - C_FORCE_ROOT=1
+    links:
+      - postgres
+      - tika
+      - rabbitmq
+      - s3
+    command: celery -A lexpredict_openedgar.taskapp worker --loglevel=INFO -c16
+
+  tika:
+    image: apache/tika
+    ports:
+      - 9998:9998
+
+  postgres:
+    image: postgres
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=openedgar
+      - POSTGRES_PASSWORD=openedgar
+      - POSTGRES_DB=openedgar
+    volumes:
+      - postgres-data:/var/lib/postgresql/data/
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    volumes:
+      - rabbitmq-etc:/etc/rabbitmq/
+      - rabbitmq-data:/var/lib/rabbitmq/
+      - rabbitmq-logs:/var/log/rabbitmq/
+    environment:
+      RABBITMQ_DEFAULT_USER: openedgar
+      RABBITMQ_DEFAULT_PASS: openedgar
+      RABBITMQ_DEFAULT_VHOST: openedgar
+    ports:
+      - 5672:5672
+      - 15672:15672
+
+  s3:
+    image: minio/minio
+    ports:
+      - 9000:9000
+    volumes:
+      - minio-data:/data
+    environment:
+      MINIO_ACCESS_KEY: minio_access_key
+      MINIO_SECRET_KEY: minio_secret_key
+    command: server /data
+
+volumes:
+  minio-data:
+  postgres-data:
+  rabbitmq-data:
+  rabbitmq-logs:
+  rabbitmq-etc:
