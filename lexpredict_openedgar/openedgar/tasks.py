@@ -203,7 +203,7 @@ def process_filing_index(client_type: str, file_path: str, filing_index_buffer: 
     if client_type == "S3":
         client = S3Client()
     else:
-        client = LocalClient()
+        client = LocalClient(os.environ["DOWNLOAD_PATH"])
 
     # Retrieve buffer if not passed
     if filing_index_buffer is None:

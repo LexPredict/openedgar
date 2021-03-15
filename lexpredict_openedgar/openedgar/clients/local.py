@@ -35,24 +35,25 @@ logger.addHandler(console)
 
 
 class LocalClient:
-
-    def __init__(self):
+    prefix = ''
+    def __init__(self, prefix=''):
+        self.prefix=prefix
         logger.info("Initialized local client")
 
     def path_exists(self, path: str):
-        return os.path.exists(path)
+        return os.path.exists(os.path.join(self.prefix, path))
 
     def put_buffer(self, file_path: str, buffer, write_bytes=True):
-        dir_name = os.path.dirname(file_path)
+        dir_name = os.path.dirname(os.path.join(self.prefix, file_path))
         if not os.path.exists(dir_name):
             os.makedirs(dir_name)
         if write_bytes:
             mode="wb"
         else:
             mode="w"
-        with open(file_path, mode=mode) as localfile:
+        with open(os.path.join(self.prefix, file_path), mode=mode) as localfile:
             localfile.write(buffer)
 
     def get_buffer(self, file_path: str):
-        with open(file_path, mode='rb') as localfile:
+        with open(os.path.join(self.prefix, file_path), mode='rb') as localfile:
             return localfile.read()

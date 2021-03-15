@@ -66,8 +66,8 @@ def download_filing_index_data(year: int = None):
         # Create S3 client
         download_client = S3Client()
     else:
-        download_client = LocalClient()
         path_prefix = os.environ["DOWNLOAD_PATH"]
+        download_client = LocalClient(path_prefix)
 
     # Now iterate through list to check if already on S3
     for filing_index_path in filing_index_list:
