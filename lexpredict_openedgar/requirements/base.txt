@@ -20,7 +20,7 @@ django-crispy-forms==1.7.0
 django-model-utils==3.1.1
 
 # Images
-Pillow==5.0.0
+Pillow==8.3.2
 
 # Password storage
 argon2-cffi==18.1.0
