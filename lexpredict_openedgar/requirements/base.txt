@@ -44,7 +44,7 @@ django-redis==4.8.0
 redis>=2.10.5
 
 
-celery==3.1.25 # pyup: <4.0
+celery==5.2.2 # pyup: <4.0
 requests==2.20.0
 notebook==5.7.1
 urllib3==1.23
