@@ -52,7 +52,7 @@ urllib3==1.23
 
 
 # Your custom requirements go here
-lxml==4.1.1
+lxml==4.9.1
 boto3==1.6.4
 botocore==1.9.4
 numpy==1.14.3
